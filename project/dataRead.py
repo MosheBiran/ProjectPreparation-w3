@@ -50,7 +50,15 @@ def select_task_by_table(conn, table):
 
 def main():
     database = r"C:\Users\biran\Desktop\3\database.sqlite\database.sqlite"
-
+    """
+    Country = { id , name }
+    League = { id , country_id , name  }
+    Match = { id , country_id , league_id ... 115 column }
+    Player = { id , player_api_id , player_name , player_fifa_api_id , birthday , height , weight }
+    Player_Attributes = { 42 col }
+    Team = {id , team_api_id , team_fifa_api_id , team_long_name , team_short_name }
+    Team_Attributes = { 25 col }
+    """
     # create a database connection
     conn = create_connection(database)
     with conn:
@@ -60,3 +68,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
