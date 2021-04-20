@@ -48,7 +48,7 @@ def select_task_by_table(conn, table):
         print(row)
 
 
-def main():
+def dataRead():
     database = r"C:\Users\biran\Desktop\3\database.sqlite\database.sqlite"
     """
     Country = { id , name }
@@ -66,6 +66,4 @@ def main():
         select_task_by_table(conn, "Country")
 
 
-if __name__ == '__main__':
-    main()
 
