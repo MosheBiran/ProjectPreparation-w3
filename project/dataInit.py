@@ -53,7 +53,7 @@ def create_table(cursor):
 
 
 def init():
-    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\archive\database.sqlite"
+    database = r"C:\Users\Daniel\Downloads\archive\database.sqlite"
     """
     Country = { id , name }
     League = { id , country_id , name  }
@@ -74,6 +74,26 @@ def init():
     cursor.execute('SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes')
     data_Team_Attr = cursor.fetchall()
     data_Team_Attr_np = np.array(data_Team_Attr)
+    AllData = np.zeros((len(data_match_np), 27), dtype=str)
+
+    for i in range(len(data_match_np)):
+        for k in range(7):
+            AllData[i][k] = str(data_match_np[i][k])
+        for j in range(len(data_Team_Attr_np)):
+            #  Home Team
+            if data_match_np[i][0] == data_Team_Attr_np[j][0]:
+                if data_match_np[i][4][:4] == data_Team_Attr_np[j][1][:4]:
+                    for k in range(7, 7+len(data_Team_Attr_np[j])-2):
+                        AllData[i][k] = str(data_Team_Attr_np[j][k-5])
+            #  Away Team
+            elif data_match_np[i][1] == data_Team_Attr_np[j][0]:
+                if data_match_np[i][4][:4] == data_Team_Attr_np[j][1][:4]:
+                    for k in range(7 + len(data_Team_Attr_np[j])-1,  7 + len(data_Team_Attr_np[j])-1 + len(data_Team_Attr_np[j])-2):
+                        t=AllData[i][k] = str(data_Team_Attr_np[j][k - 12])
+                        AllData[i][k] = str(data_Team_Attr_np[j][k - 12])
+
+            # TODO - its puts only the first Char..
+            # TODO - in away team 1 step back all the data
 
     cursor.close()
     conn.close()
