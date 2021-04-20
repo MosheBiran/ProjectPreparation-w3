@@ -75,6 +75,34 @@ def init():
     data_Team_Attr = cursor.fetchall()
     data_Team_Attr_np = np.array(data_Team_Attr)
 
+    # result_table = cursor.execute('''create table data (field1 real, field2 real, field3 real,    field4 real)''')
+    # cursor.commit()
+
+    res = []
+
+    for i in range(0,len(data_match)):
+        for j in range(0,len(data_Team_Attr)):
+            # if year's date is the same
+            if data_match[i][4][:3] != '2015' and data_match[i][4][:3] != '2016':
+                if data_match[i][4][:4] == data_Team_Attr[j][1][:4] and (data_match[i][0] == data_Team_Attr[j][0] or data_match[i][1] == data_Team_Attr[j][0]):
+                    if len(res) != 0:
+                        for k in range(0,len(res)):
+                            if res[k][0] == data_Team_Attr[j][0] or res[k][1] == data_Team_Attr[j][0]:
+                                a = list(res[k])
+                                b = list(data_Team_Attr[j])
+                                a.extend(b[2:])
+                                res[k] = a
+                        else:
+                            a = list(data_match[i])
+                            b = list(data_Team_Attr[j])
+                            a.extend(b[2:])
+                            res.append(a)
+                    else:
+                        a = list(data_match[i])
+                        b = list(data_Team_Attr[j])
+                        a.extend(b[2:])
+                        res.append(a)
+
     cursor.close()
     conn.close()
 
