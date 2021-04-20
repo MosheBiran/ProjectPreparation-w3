@@ -32,15 +32,15 @@ def select_all_tasks(conn):
         print(row)
 
 
-def select_task_by_Table(conn, Table):
+def select_task_by_table(conn, table):
     """
-    Query tasks by priority
+    Query tasks by table
     :param conn: the Connection object
-    :param Table:
+    :param table:
     :return:
     """
     cur = conn.cursor()
-    cur.execute("SELECT * FROM " + Table)
+    cur.execute("SELECT * FROM " + table)
 
     rows = cur.fetchall()
 
@@ -55,7 +55,7 @@ def main():
     conn = create_connection(database)
     with conn:
         print("1. Query by Table:")
-        select_task_by_Table(conn, "Country")
+        select_task_by_table(conn, "Country")
 
 
 if __name__ == '__main__':
