@@ -1,6 +1,8 @@
 import sqlite3
 from aifc import Error
 import numpy as np
+import pandas as pd
+
 
 def create_connection(db_file):
     """ create a database connection to the SQLite database
@@ -53,7 +55,7 @@ def create_table(cursor):
 
 
 def init():
-    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\archive\database.sqlite"
+    database = r"C:\Users\biran\Desktop\3\database.sqlite\database.sqlite"
     """
     Country = { id , name }
     League = { id , country_id , name  }
@@ -67,13 +69,18 @@ def init():
     conn = create_connection(database)
     cursor = conn.cursor()
 
-    cursor.execute('SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match')
-    data_match = cursor.fetchall()
-    data_match_np = np.array(data_match)
+    data_matchDF = pd.read_sql_query('SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match',conn)
+    data_Team_AttrDF = pd.read_sql_query('SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes',conn)
+    data_matchDF['date'] = data_matchDF['date'].str.slice(stop=4)
+    data_Team_AttrDF['date'] = data_Team_AttrDF['date'].str.slice(stop=4)
 
-    cursor.execute('SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes')
-    data_Team_Attr = cursor.fetchall()
-    data_Team_Attr_np = np.array(data_Team_Attr)
+    data_matchDF = data_matchDF.sort_values(by=['home_team_api_id','date'])
+    data_Team_AttrDF = data_Team_AttrDF.sort_values(by=['team_api_id','date'])
+
+    new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=[ 'date','home_team_api_id'], right_on=[ 'date','team_api_id'])
+    new_df = pd.merge(new_df, data_Team_AttrDF, how='inner', left_on=[ 'date','away_team_api_id'], right_on=[ 'date','team_api_id'])
+    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+    #     print(new_df)
 
     cursor.close()
     conn.close()
