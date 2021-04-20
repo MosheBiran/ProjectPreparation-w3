@@ -1,6 +1,6 @@
 import sqlite3
 from aifc import Error
-
+import numpy as np
 
 def create_connection(db_file):
     """ create a database connection to the SQLite database
@@ -47,9 +47,13 @@ def select_task_by_table(conn, table):
     for row in rows:
         print(row)
 
+def create_table(cursor):
+    cursor.execute('''create table data (field1 real, field2 real, field3 real,    field4 real)''')
+    cursor.commit()
+
 
 def init():
-    database = r"C:\Users\biran\Desktop\3\database.sqlite\database.sqlite"
+    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\archive\database.sqlite"
     """
     Country = { id , name }
     League = { id , country_id , name  }
@@ -61,9 +65,17 @@ def init():
     """
     # create a database connection
     conn = create_connection(database)
-    with conn:
-        print("1. Query by Table:")
-        select_task_by_table(conn, "Country")
+    cursor = conn.cursor()
 
+    cursor.execute('SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match')
+    data_match = cursor.fetchall()
+    data_match_np = np.array(data_match)
+
+    cursor.execute('SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes')
+    data_Team_Attr = cursor.fetchall()
+    data_Team_Attr_np = np.array(data_Team_Attr)
+
+    cursor.close()
+    conn.close()
 
 
