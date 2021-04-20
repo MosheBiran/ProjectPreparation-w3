@@ -48,7 +48,7 @@ def select_task_by_table(conn, table):
         print(row)
 
 
-def dataRead():
+def init():
     database = r"C:\Users\biran\Desktop\3\database.sqlite\database.sqlite"
     """
     Country = { id , name }
