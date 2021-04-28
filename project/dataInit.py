@@ -3,6 +3,7 @@ from aifc import Error
 import numpy as np
 import pandas as pd
 
+
 def create_connection(db_file):
     """ create a database connection to the SQLite database
         specified by the db_file
@@ -48,6 +49,7 @@ def select_task_by_table(conn, table):
     for row in rows:
         print(row)
 
+
 def create_table(cursor):
     cursor.execute('''create table data (field1 real, field2 real, field3 real,    field4 real)''')
     cursor.commit()
@@ -67,46 +69,31 @@ def init():
     # create a database connection
     conn = create_connection(database)
     cursor = conn.cursor()
+    # create DF
+    data_matchDF = pd.read_sql_query(
+        'SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match', conn)
 
-    cursor.execute('SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match')
-    data_match = cursor.fetchall()
-    # data_match_np = np.array(data_match)
+    data_Team_AttrDF = pd.read_sql_query(
+        'SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,'
+        'buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes',
+        conn)
 
-    matches = pd.read_sql('SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match', conn)
+    # clean date
+    data_matchDF['date'] = data_matchDF['date'].str.slice(stop=4)
+    data_Team_AttrDF['date'] = data_Team_AttrDF['date'].str.slice(stop=4)
 
-    teams = pd.read_sql('SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes', conn)
+    # sorting by relevant col
+    data_matchDF = data_matchDF.sort_values(by=['home_team_api_id', 'date'])
+    data_Team_AttrDF = data_Team_AttrDF.sort_values(by=['team_api_id', 'date'])
 
+    # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
+    new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=['date', 'home_team_api_id'],
+                      right_on=['date', 'team_api_id'])
+    new_df = pd.merge(new_df, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
+                      right_on=['date', 'team_api_id'])
 
-    merged = pd.merge(matches, teams, how='outer', left_on="home_team_api_id", right_on="team_api_id")
-    
-
-
-    # cursor.execute('SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes')
-    # data_Team_Attr = cursor.fetchall()
-    #
-    # data_Team_Attr_np = np.array(data_Team_Attr)
-    # AllData = np.zeros((len(data_match_np), 27), dtype=str)
-    #
-    # for i in range(len(data_match_np)):
-    #     for k in range(7):
-    #         AllData[i][k] = str(data_match_np[i][k])
-    #     for j in range(len(data_Team_Attr_np)):
-    #         #  Home Team
-    #         if data_match_np[i][0] == data_Team_Attr_np[j][0]:
-    #             if data_match_np[i][4][:4] == data_Team_Attr_np[j][1][:4]:
-    #                 for k in range(7, 7+len(data_Team_Attr_np[j])-2):
-    #                     AllData[i][k] = str(data_Team_Attr_np[j][k-5])
-    #         #  Away Team
-    #         elif data_match_np[i][1] == data_Team_Attr_np[j][0]:
-    #             if data_match_np[i][4][:4] == data_Team_Attr_np[j][1][:4]:
-    #                 for k in range(7 + len(data_Team_Attr_np[j])-1,  7 + len(data_Team_Attr_np[j])-1 + len(data_Team_Attr_np[j])-2):
-    #                     t=AllData[i][k] = str(data_Team_Attr_np[j][k - 12])
-    #                     AllData[i][k] = str(data_Team_Attr_np[j][k - 12])
-    #
-    #         # TODO - its puts only the first Char..
-    #         # TODO - in away team 1 step back all the data
+    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    #     print(new_df)
 
     cursor.close()
     conn.close()
-
-
