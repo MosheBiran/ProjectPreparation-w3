@@ -1,6 +1,8 @@
 import sqlite3
 from aifc import Error
 import numpy as np
+import pandas as pd
+
 
 def create_connection(db_file):
     """ create a database connection to the SQLite database
@@ -47,13 +49,14 @@ def select_task_by_table(conn, table):
     for row in rows:
         print(row)
 
+
 def create_table(cursor):
     cursor.execute('''create table data (field1 real, field2 real, field3 real,    field4 real)''')
     cursor.commit()
 
 
 def init():
-    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\archive\database.sqlite"
+    database = r"C:\Users\biran\Desktop\3\database.sqlite\database.sqlite"
     """
     Country = { id , name }
     League = { id , country_id , name  }
@@ -66,44 +69,31 @@ def init():
     # create a database connection
     conn = create_connection(database)
     cursor = conn.cursor()
+    # create DF
+    data_matchDF = pd.read_sql_query(
+        'SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match', conn)
 
-    cursor.execute('SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match')
-    data_match = cursor.fetchall()
-    data_match_np = np.array(data_match)
+    data_Team_AttrDF = pd.read_sql_query(
+        'SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,'
+        'buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes',
+        conn)
 
-    cursor.execute('SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes')
-    data_Team_Attr = cursor.fetchall()
-    data_Team_Attr_np = np.array(data_Team_Attr)
+    # clean date
+    data_matchDF['date'] = data_matchDF['date'].str.slice(stop=4)
+    data_Team_AttrDF['date'] = data_Team_AttrDF['date'].str.slice(stop=4)
 
-    # result_table = cursor.execute('''create table data (field1 real, field2 real, field3 real,    field4 real)''')
-    # cursor.commit()
+    # sorting by relevant col
+    data_matchDF = data_matchDF.sort_values(by=['home_team_api_id', 'date'])
+    data_Team_AttrDF = data_Team_AttrDF.sort_values(by=['team_api_id', 'date'])
 
-    res = []
+    # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
+    new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=['date', 'home_team_api_id'],
+                      right_on=['date', 'team_api_id'])
+    new_df = pd.merge(new_df, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
+                      right_on=['date', 'team_api_id'])
 
-    for i in range(0,len(data_match)):
-        for j in range(0,len(data_Team_Attr)):
-            # if year's date is the same
-            if data_match[i][4][:3] != '2015' and data_match[i][4][:3] != '2016' and data_match[i][4][:3] != '2014' and data_match[i][4][:3] != '2013' and data_match[i][4][:3] != '2012':
-                if data_match[i][4][:4] == data_Team_Attr[j][1][:4] and (data_match[i][0] == data_Team_Attr[j][0] or data_match[i][1] == data_Team_Attr[j][0]):
-                    if len(res) != 0:
-                        for k in range(0,len(res)):
-                            if res[k][0] == data_Team_Attr[j][0] or res[k][1] == data_Team_Attr[j][0]:
-                                a = list(res[k])
-                                b = list(data_Team_Attr[j])
-                                a.extend(b[2:])
-                                res[k] = a
-                        else:
-                            a = list(data_match[i])
-                            b = list(data_Team_Attr[j])
-                            a.extend(b[2:])
-                            res.append(a)
-                    else:
-                        a = list(data_match[i])
-                        b = list(data_Team_Attr[j])
-                        a.extend(b[2:])
-                        res.append(a)
+    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    #     print(new_df)
 
     cursor.close()
     conn.close()
-
-
