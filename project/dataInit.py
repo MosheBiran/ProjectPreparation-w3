@@ -83,7 +83,7 @@ def init():
     for i in range(0,len(data_match)):
         for j in range(0,len(data_Team_Attr)):
             # if year's date is the same
-            if data_match[i][4][:3] != '2015' and data_match[i][4][:3] != '2016':
+            if data_match[i][4][:3] != '2015' and data_match[i][4][:3] != '2016' and data_match[i][4][:3] != '2014' and data_match[i][4][:3] != '2013' and data_match[i][4][:3] != '2012':
                 if data_match[i][4][:4] == data_Team_Attr[j][1][:4] and (data_match[i][0] == data_Team_Attr[j][0] or data_match[i][1] == data_Team_Attr[j][0]):
                     if len(res) != 0:
                         for k in range(0,len(res)):
