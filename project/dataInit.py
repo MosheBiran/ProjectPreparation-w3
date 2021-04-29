@@ -94,6 +94,7 @@ def init():
 
     # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
     #     print(new_df)
+    # daniel dinshtein
 
     cursor.close()
     conn.close()
