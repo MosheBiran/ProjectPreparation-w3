@@ -56,7 +56,7 @@ def create_table(cursor):
 
 
 def init():
-    database = r"C:\Users\biran\Desktop\3\database.sqlite\database.sqlite"
+    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\archive\database.sqlite"
     """
     Country = { id , name }
     League = { id , country_id , name  }
