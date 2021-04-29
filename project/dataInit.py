@@ -55,6 +55,10 @@ def create_table(cursor):
     cursor.commit()
 
 
+def save2CVS(database_after_clean):
+    database_after_clean.to_csv("C:\\Users\\biran\\Desktop\\3\\database.sqlite\\database_after_clean.csv")
+
+
 def init():
     database = r"C:\Users\Daniel\Downloads\archive\database.sqlite"
     """
@@ -69,6 +73,7 @@ def init():
     # create a database connection
     conn = create_connection(database)
     cursor = conn.cursor()
+
     # create DF
     data_matchDF = pd.read_sql_query(
         'SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match', conn)
@@ -78,7 +83,7 @@ def init():
         'buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes',
         conn)
 
-    # clean date
+    # Clearing the date from day and month
     data_matchDF['date'] = data_matchDF['date'].str.slice(stop=4)
     data_Team_AttrDF['date'] = data_Team_AttrDF['date'].str.slice(stop=4)
 
@@ -92,8 +97,13 @@ def init():
     new_df = pd.merge(new_df, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
                       right_on=['date', 'team_api_id'])
 
-    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    #     print(new_df)
+    # Adding a column of binary representation win loss and draw.
+    conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
+                  new_df["home_team_goal"] < new_df["away_team_goal"],
+                  new_df["home_team_goal"] == new_df["away_team_goal"]]
 
+    choices = ["1", "-1", "0"]
+    new_df["result"] = np.select(conditions, choices, default=np.nan)
+    save2CVS(new_df)
     cursor.close()
     conn.close()
