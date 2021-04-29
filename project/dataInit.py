@@ -56,11 +56,11 @@ def create_table(cursor):
 
 
 def save2CVS(database_after_clean):
-    database_after_clean.to_csv("C:\\Users\\biran\\Desktop\\3\\database.sqlite\\database_after_clean.csv")
+    database_after_clean.to_csv("C:\\STUDY\\YEAR C\\SEMESTER B\\סדנת הכנה לפרויקט\\עבודות\\3\\CSV\\database_after_clean.csv")
 
 
 def init():
-    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\archive\database.sqlite"
+    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\database.sqlite"
     """
     Country = { id , name }
     League = { id , country_id , name  }
