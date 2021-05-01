@@ -6,7 +6,7 @@ from scipy.interpolate import rbf
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 
-path = "C:\\Users\\biran\\Desktop\\3\\database.sqlite\\"
+path = "C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\database.sqlite"
 
 
 def create_connection(db_file):
@@ -109,10 +109,10 @@ def test_train_models_split(new_df):
     df_2015_2016 = new_df.loc[(new_df['season'].isin(["2015/2016"]))]
     df_2012_2013_2014.to_csv(path + "df_2012_2013_2014.csv")
     df_2015_2016.to_csv(path + "df_2015_2016.csv")
-    return df_2012_2013_2014, df_2015_2016
 
 
 def get_team_names(new_df, data_team):
+
     new_df_with_name = pd.merge(data_team, new_df, how='inner', left_on=['team_api_id'],
                                 right_on=['away_team_api_id'])
 
@@ -135,18 +135,22 @@ def get_team_names(new_df, data_team):
     return new_df_with_name
 
 
-"""
-Country = { id , name }
-League = { id , country_id , name  }
-Match = { id , country_id , league_id ... 115 column }
-Player = { id , player_api_id , player_name , player_fifa_api_id , birthday , height , weight }
-Player_Attributes = { 42 col }
-Team = {id , team_api_id , team_fifa_api_id , team_long_name , team_short_name }
-Team_Attributes = { 25 col }
-"""
+def init():
+    database = path + "database.sqlite"
+    """
+    Country = { id , name }
+    League = { id , country_id , name  }
+    Match = { id , country_id , league_id ... 115 column }
+    Player = { id , player_api_id , player_name , player_fifa_api_id , birthday , height , weight }
+    Player_Attributes = { 42 col }
+    Team = {id , team_api_id , team_fifa_api_id , team_long_name , team_short_name }
+    Team_Attributes = { 25 col }
+    """
+    # create a database connection
+    conn = create_connection(database)
+    cursor = conn.cursor()
 
-
-def sql_q(conn):
+    # create DF
     data_matchDF = pd.read_sql_query(
         'SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match', conn)
 
@@ -156,61 +160,6 @@ def sql_q(conn):
         conn)
 
     data_Team = pd.read_sql_query('SELECT team_api_id, team_long_name from Team', conn)
-
-    return data_matchDF, data_Team_AttrDF, data_Team
-
-
-def func(new_df_with_name):
-    df_home_team_win_sum = new_df_with_name.groupby(["home_team_api_id", "result"]).size().reset_index(name="wins_home_sum")
-    df_home_team_win_sum = df_home_team_win_sum.loc[(df_home_team_win_sum['result'] == 1)]
-
-    df_away_team_win_sum = new_df_with_name.groupby(["away_team_api_id", "result"]).size().reset_index(name="wins_away_sum")
-    df_away_team_win_sum = df_away_team_win_sum.loc[(df_away_team_win_sum['result'] == -1)]
-
-    df_home_team_total_count = new_df_with_name.groupby(["home_team_api_id"]).result.count().reset_index(
-        name="home_count")
-
-    df_away_team_total_count = new_df_with_name.groupby(["away_team_api_id"]).result.count().reset_index(
-        name="away_count")
-
-    del df_home_team_win_sum['result']
-    del df_away_team_win_sum['result']
-
-    df_home_team_win_sum = df_home_team_win_sum.merge(df_home_team_total_count, on=['home_team_api_id'], how='left')
-    df_away_team_win_sum = df_away_team_win_sum.merge(df_away_team_total_count, on=['away_team_api_id'], how='left')
-
-    df_away_team_win_sum['percentAway'] = df_away_team_win_sum[['wins_away_sum']].div(df_away_team_win_sum['away_count'], axis=0)
-    df_home_team_win_sum['percentHome'] = df_home_team_win_sum[['wins_home_sum']].div(df_home_team_win_sum['home_count'], axis=0)
-
-    #     df_home_team_win_sum[['wins_home_sum']].div(df_away_team_total_count['away_count'].values,axis=0)
-    #
-    # df_home_team_win_sum["percentAway"] = str(df_home_team_win_sum["wins_home_sum"]) + str(df_home_team_total_count[
-    #     "home_count"])
-
-
-
-    df_percent_wim = pd.merge(df_home_team_win_sum, df_away_team_win_sum, how='inner', left_on=['home_team_api_id'],
-                              right_on=['away_team_api_id'])
-
-    conditions_percent = [df_percent_wim["percentHome"] > df_percent_wim["percentAway"],
-                          df_percent_wim["percentHome"] < df_percent_wim["percentAway"],
-                          df_percent_wim["percentHome"] == df_percent_wim["percentAway"]]
-
-    choices = ["Home", "Away", "NeverMind"]
-    df_percent_wim["whereBetter"] = np.select(conditions_percent, choices, default=np.nan)
-    return df_percent_wim
-
-
-def init():
-    database = path + "database.sqlite"
-
-    # create a database connection
-    conn = create_connection(database)
-    cursor = conn.cursor()
-
-    # create DF
-    data_matchDF, data_Team_AttrDF, data_Team = sql_q(conn)
-
     data_Team = data_Team.sort_values(by=['team_api_id'])
 
     new_df = dataframe_filter(data_matchDF, data_Team_AttrDF)
@@ -220,24 +169,36 @@ def init():
                   new_df["home_team_goal"] < new_df["away_team_goal"],
                   new_df["home_team_goal"] == new_df["away_team_goal"]]
 
-    choices = [1, -1, 0]
+    choices = ["1", "-1", "0"]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
-    new_df["result"] = new_df["result"].astype(int)
 
     new_df_with_name = get_team_names(new_df, data_Team)
-    df_2012_2013_2014 = new_df.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
-    df_percent_wim = func(df_2012_2013_2014)
 
-    # df_comp = pd.merge(dff1, dff2, how='inner', left_on=['home_team_api_id', "result"],
-    #                    right_on=['away_team_api_id', "result"])
-    #
-    # del df_comp['away_team_api_id']
-    #
-    # df_comp_wins_home = dff1.loc[dff1["home_team_api_id"] & dff1["result"] == 1, "win_lose_home"]
-    # df_comp_wins_home = dff1.groupby(["home_team_api_id"]).win_lose_home.sum().reset_index(name="home_wins")
-    # df_comp_wins_away = df_comp.groupby(["away_team_api_id"]).win_lose_home.sum().reset_index(name="away_wins")
 
-    # test_train_models_split(new_df_with_name)
+    df_home_team_win_sum = new_df_with_name.groupby(["home_team_api_id"]).result.sum().reset_index(name="wins_home_sum")
+    df_home_team_win_count = new_df_with_name.groupby(["home_team_api_id"]).result.count().reset_index(
+        name="wins_home_count")
+    df_away_team_win_sum = new_df_with_name.groupby(["away_team_api_id"]).result.sum().reset_index(name="wins_away_sum")
+    df_away_team_win_count = new_df_with_name.groupby(["away_team_api_id"]).result.count().reset_index(
+        name="wins_away_count")
+    df_home_team_win_sum["percentHome"] = df_home_team_win_sum["wins_home_sum"] / df_home_team_win_count[
+        "wins_home_count"]
+    df_away_team_win_sum["percentAway"] = df_away_team_win_sum["wins_away_sum"] / df_away_team_win_count[
+            "wins_away_count"]
+
+    df_percent_wim = pd.merge(df_home_team_win_sum, df_away_team_win_sum, how='inner', left_on=['home_team_api_id'],
+                                  right_on=['away_team_api_id'])
+
+    conditions_percent = [df_percent_wim["percentHome"] > df_percent_wim["percentAway"],
+                          df_percent_wim["percentHome"] < df_percent_wim["percentAway"],
+                          df_percent_wim["percentHome"] == df_percent_wim["percentAway"]]
+
+    choices = ["Home", "Away", "NeverMind"]
+    df_percent_wim["whereBetter"] = np.select(conditions_percent, choices, default=np.nan)
+
+
+
+    test_train_models_split(new_df_with_name)
 
     # save2CSV(new_df, path)
     cursor.close()
