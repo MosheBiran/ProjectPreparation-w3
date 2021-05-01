@@ -60,11 +60,11 @@ def create_table(cursor):
 
 def save2CVS(database_after_clean, file_path):
     database_after_clean.to_csv(
-        "C:\\STUDY\\YEAR C\\SEMESTER B\\סדנת הכנה לפרויקט\\עבודות\\3\\CSV\\database_after_clean.csv")
+        "database_after_clean.csv")
 
 
 def init():
-    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\database.sqlite"
+    database = "database.sqlite"
     """
     Country = { id , name }
     League = { id , country_id , name  }
@@ -116,9 +116,9 @@ def init():
     choices = ["1", "-1", "0"]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
 
-    null_new_df.to_csv("C:\\STUDY\\YEAR C\\SEMESTER B\\סדנת הכנה לפרויקט\\עבודות\\3\\CSV\\database_null.csv")
+    null_new_df.to_csv("database_null.csv")
 
-    new_df["season"] = np.select(["2012"], choices, default=np.nan)
+    # new_df["season"] = np.select(["2012"], choices, default=np.nan)
 
     # save2CVS(new_df, path)
     cursor.close()
