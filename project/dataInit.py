@@ -59,8 +59,47 @@ def create_table(cursor):
 
 
 def save2CVS(database_after_clean, file_path):
-    database_after_clean.to_csv(
-        "database_after_clean.csv")
+    database_after_clean.to_csv(file_path + "database_after_clean.csv")
+
+
+def dataframe_filter(data_match_df, data_team_attr_df):
+    # Clearing the date from day and month
+    data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
+    data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
+
+    # sorting by relevant col
+    data_matchDF = data_match_df.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
+    data_Team_AttrDF = data_team_attr_df.sort_values(by=['team_api_id', 'date'])
+
+    # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
+    new_df_inner = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=['date', 'home_team_api_id'],
+                            right_on=['date', 'team_api_id'])
+    new_df_inner = pd.merge(new_df_inner, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
+                            right_on=['date', 'team_api_id'])
+
+    new_df_inner = new_df_inner.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
+
+    return new_df_inner
+
+
+def dataframe_filter_null(data_match_df, data_team_attr_df):
+    # Clearing the date from day and month
+    data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
+    data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
+
+    # sorting by relevant col
+    data_matchDF = data_match_df.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
+    data_Team_AttrDF = data_team_attr_df.sort_values(by=['team_api_id', 'date'])
+
+    # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
+    new_df_outer = pd.merge(data_matchDF, data_Team_AttrDF, how='outer', left_on=['date', 'home_team_api_id'],
+                            right_on=['date', 'team_api_id'])
+    new_df_outer = pd.merge(new_df_outer, data_Team_AttrDF, how='outer', left_on=['date', 'away_team_api_id'],
+                            right_on=['date', 'team_api_id'])
+
+    new_df_outer = new_df_outer.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
+
+    return new_df_outer
 
 
 def init():
@@ -87,26 +126,7 @@ def init():
         'buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes',
         conn)
 
-    # Clearing the date from day and month
-    data_matchDF['date'] = data_matchDF['date'].str.slice(stop=4)
-    data_Team_AttrDF['date'] = data_Team_AttrDF['date'].str.slice(stop=4)
-
-    # sorting by relevant col
-    data_matchDF = data_matchDF.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
-    data_Team_AttrDF = data_Team_AttrDF.sort_values(by=['team_api_id', 'date'])
-
-    # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
-    new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=['date', 'home_team_api_id'],
-                      right_on=['date', 'team_api_id'])
-    new_df = pd.merge(new_df, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
-                      right_on=['date', 'team_api_id'])
-
-    # df with null
-    null_new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='outer', left_on=['date', 'home_team_api_id'],
-                           right_on=['date', 'team_api_id'])
-    null_new_df = pd.merge(null_new_df, data_Team_AttrDF, how='outer', left_on=['date', 'away_team_api_id'],
-                           right_on=['date', 'team_api_id'])
-    null_new_df = null_new_df.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
+    new_df = dataframe_filter(data_matchDF, data_Team_AttrDF)
 
     # Adding a column of binary representation win loss and draw.
     conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
@@ -116,18 +136,9 @@ def init():
     choices = ["1", "-1", "0"]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
 
-    null_new_df.to_csv("database_null.csv")
-
-    # new_df["season"] = np.select(["2012"], choices, default=np.nan)
+    df_2012_2013_2014 = new_df.loc[(new_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    df_2015_2016 = new_df.loc[(new_df['season'].isin(["2015/2016"]))]
 
     # save2CVS(new_df, path)
     cursor.close()
     conn.close()
-
-    # X, y = np.arange(10).reshape((30, 2)), range(30)
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
-    # # clf = svm.SVC(kernel=‘rbf)
-    # # clf.fit(X_train, y_train)
-    # # clf.predict(X_test)
-
-
