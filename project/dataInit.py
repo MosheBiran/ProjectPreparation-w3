@@ -111,6 +111,30 @@ def test_train_models_split(new_df):
     df_2015_2016.to_csv(path + "df_2015_2016.csv")
 
 
+def get_team_names(new_df, data_team):
+
+    new_df_with_name = pd.merge(data_team, new_df, how='inner', left_on=['team_api_id'],
+                                right_on=['away_team_api_id'])
+
+    new_df_with_name = pd.merge(data_team, new_df_with_name, how='inner', left_on=['team_api_id'],
+                                right_on=['home_team_api_id'])
+
+    del new_df_with_name['team_api_id_x']
+    del new_df_with_name['team_api_id_y']
+
+    for col in new_df_with_name.columns:
+        if '_x' == col[len(col) - 2:len(col)]:
+            new_df_with_name = new_df_with_name.rename(
+                columns={col: 'home_' + col[:len(col) - 2]}
+                , inplace=False)
+        if '_y' == col[len(col) - 2:len(col)]:
+            new_df_with_name = new_df_with_name.rename(
+                columns={col: 'away_' + col[:len(col) - 2]}
+                , inplace=False)
+
+    return new_df_with_name
+
+
 def init():
     database = path + "database.sqlite"
     """
@@ -138,23 +162,7 @@ def init():
     data_Team = pd.read_sql_query('SELECT team_api_id, team_long_name from Team', conn)
     data_Team = data_Team.sort_values(by=['team_api_id'])
 
-    # data_Team = data_Team.dropna(thresh=2)
-    # data_Team['team_api_id'] = data_Team['team_api_id'].astype(int)
-
     new_df = dataframe_filter(data_matchDF, data_Team_AttrDF)
-
-    # Adding team long name
-    new_df = pd.merge(data_Team, new_df, how='inner', left_on=['team_api_id'],
-                      right_on=['away_team_api_id'])
-
-    new_df = pd.merge(data_Team, new_df, how='inner', left_on=['team_api_id'],
-                      right_on=['home_team_api_id'])
-
-    del new_df['team_api_id_x']
-    del new_df['team_api_id_y']
-
-    new_df = new_df.rename(columns={'team_long_name_x': 'home_team_long_name','team_long_name_y': 'away_team_long_name'}
-                           , inplace=False)
 
     # Adding a column of binary representation win loss and draw.
     conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
@@ -164,7 +172,10 @@ def init():
     choices = ["1", "-1", "0"]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
 
-    test_train_models_split(new_df)
+    new_df_with_name = get_team_names(new_df, data_Team)
+
+    test_train_models_split(new_df_with_name)
+
     # save2CSV(new_df, path)
     cursor.close()
     conn.close()
