@@ -2,6 +2,9 @@ import sqlite3
 from aifc import Error
 import numpy as np
 import pandas as pd
+from scipy.interpolate import rbf
+from sklearn.model_selection import train_test_split
+from sklearn import svm
 
 
 def create_connection(db_file):
@@ -93,10 +96,10 @@ def init():
     data_Team_AttrDF = data_Team_AttrDF.sort_values(by=['team_api_id', 'date'])
 
     # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
-    inner_new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=['date', 'home_team_api_id'],
-                            right_on=['date', 'team_api_id'])
-    inner_new_df = pd.merge(inner_new_df, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
-                            right_on=['date', 'team_api_id'])
+    new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=['date', 'home_team_api_id'],
+                      right_on=['date', 'team_api_id'])
+    new_df = pd.merge(new_df, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
+                      right_on=['date', 'team_api_id'])
 
     # df with null
     null_new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='outer', left_on=['date', 'home_team_api_id'],
@@ -109,18 +112,13 @@ def init():
     # null_new_df['away_team_api_id'] = null_new_df['away_team_api_id'].astype(int)
 
     # Adding a column of binary representation win loss and draw.
-    conditions = [inner_new_df["home_team_goal"] > inner_new_df["away_team_goal"],
-                  inner_new_df["home_team_goal"] < inner_new_df["away_team_goal"],
-                  inner_new_df["home_team_goal"] == inner_new_df["away_team_goal"]]
+    conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
+                  new_df["home_team_goal"] < new_df["away_team_goal"],
+                  new_df["home_team_goal"] == new_df["away_team_goal"]]
 
     choices = ["1", "-1", "0"]
-    inner_new_df["result"] = np.select(conditions, choices, default=np.nan)
+    new_df["result"] = np.select(conditions, choices, default=np.nan)
 
-    # temp=inner_new_df["season"][1]
-    # inner_new_df.loc[
-    #     (inner_new_df["season"] == 2012 / 2013) & inner_new_df["season"] == 2013 / 2014 & inner_new_df[
-    #         "season"] == 2014 / 2015]
-    # x=1
-    # save2CVS(inner_new_df, path)
+    # save2CVS(new_df, path)
     cursor.close()
     conn.close()
