@@ -118,7 +118,7 @@ def init():
 
     null_new_df.to_csv("C:\\STUDY\\YEAR C\\SEMESTER B\\סדנת הכנה לפרויקט\\עבודות\\3\\CSV\\database_null.csv")
 
-    new_df["season"] = np.select(["2012"], choices, default=np.nan)
+    new_df["season"] = np.select(new_df["season"] != 2015 / 2016)
 
     # save2CVS(new_df, path)
     cursor.close()
@@ -129,5 +129,3 @@ def init():
     # # clf = svm.SVC(kernel=‘rbf)
     # # clf.fit(X_train, y_train)
     # # clf.predict(X_test)
-
-
