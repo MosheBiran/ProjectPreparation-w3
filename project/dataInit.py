@@ -94,9 +94,9 @@ def init():
 
     # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
     inner_new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=['date', 'home_team_api_id'],
-                      right_on=['date', 'team_api_id'])
+                            right_on=['date', 'team_api_id'])
     inner_new_df = pd.merge(inner_new_df, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
-                      right_on=['date', 'team_api_id'])
+                            right_on=['date', 'team_api_id'])
 
     # df with null
     null_new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='outer', left_on=['date', 'home_team_api_id'],
@@ -104,6 +104,9 @@ def init():
     null_new_df = pd.merge(null_new_df, data_Team_AttrDF, how='outer', left_on=['date', 'away_team_api_id'],
                            right_on=['date', 'team_api_id'])
     null_new_df = null_new_df.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
+
+    # null_new_df['home_team_api_id'] = null_new_df['home_team_api_id'].astype(int)
+    # null_new_df['away_team_api_id'] = null_new_df['away_team_api_id'].astype(int)
 
     # Adding a column of binary representation win loss and draw.
     conditions = [inner_new_df["home_team_goal"] > inner_new_df["away_team_goal"],
@@ -113,6 +116,11 @@ def init():
     choices = ["1", "-1", "0"]
     inner_new_df["result"] = np.select(conditions, choices, default=np.nan)
 
+    # temp=inner_new_df["season"][1]
+    # inner_new_df.loc[
+    #     (inner_new_df["season"] == 2012 / 2013) or inner_new_df["season"] == 2013 / 2014 or inner_new_df[
+    #         "season"] == 2014 / 2015]
+    # x=1
     # save2CVS(inner_new_df, path)
     cursor.close()
     conn.close()
