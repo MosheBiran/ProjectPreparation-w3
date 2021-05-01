@@ -118,7 +118,7 @@ def init():
 
     # temp=inner_new_df["season"][1]
     # inner_new_df.loc[
-    #     (inner_new_df["season"] == 2012 / 2013) or inner_new_df["season"] == 2013 / 2014 or inner_new_df[
+    #     (inner_new_df["season"] == 2012 / 2013) & inner_new_df["season"] == 2013 / 2014 & inner_new_df[
     #         "season"] == 2014 / 2015]
     # x=1
     # save2CVS(inner_new_df, path)
