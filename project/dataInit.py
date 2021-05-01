@@ -2,6 +2,9 @@ import sqlite3
 from aifc import Error
 import numpy as np
 import pandas as pd
+from scipy.interpolate import rbf
+from sklearn.model_selection import train_test_split
+from sklearn import svm
 
 
 def create_connection(db_file):
@@ -55,8 +58,13 @@ def create_table(cursor):
     cursor.commit()
 
 
+def save2CVS(database_after_clean, file_path):
+    database_after_clean.to_csv(
+        "C:\\STUDY\\YEAR C\\SEMESTER B\\סדנת הכנה לפרויקט\\עבודות\\3\\CSV\\database_after_clean.csv")
+
+
 def init():
-    database = r"C:\Users\biran\Desktop\3\database.sqlite\database.sqlite"
+    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\database.sqlite"
     """
     Country = { id , name }
     League = { id , country_id , name  }
@@ -69,6 +77,7 @@ def init():
     # create a database connection
     conn = create_connection(database)
     cursor = conn.cursor()
+
     # create DF
     data_matchDF = pd.read_sql_query(
         'SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match', conn)
@@ -78,12 +87,12 @@ def init():
         'buildUpPlayPositioningClass,defencePressureClass,defenceAggressionClass from Team_Attributes',
         conn)
 
-    # clean date
+    # Clearing the date from day and month
     data_matchDF['date'] = data_matchDF['date'].str.slice(stop=4)
     data_Team_AttrDF['date'] = data_Team_AttrDF['date'].str.slice(stop=4)
 
     # sorting by relevant col
-    data_matchDF = data_matchDF.sort_values(by=['home_team_api_id', 'date'])
+    data_matchDF = data_matchDF.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
     data_Team_AttrDF = data_Team_AttrDF.sort_values(by=['team_api_id', 'date'])
 
     # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
@@ -92,9 +101,33 @@ def init():
     new_df = pd.merge(new_df, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
                       right_on=['date', 'team_api_id'])
 
-    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-    #     print(new_df)
-    # daniel dinshtein
+    # df with null
+    null_new_df = pd.merge(data_matchDF, data_Team_AttrDF, how='outer', left_on=['date', 'home_team_api_id'],
+                           right_on=['date', 'team_api_id'])
+    null_new_df = pd.merge(null_new_df, data_Team_AttrDF, how='outer', left_on=['date', 'away_team_api_id'],
+                           right_on=['date', 'team_api_id'])
+    null_new_df = null_new_df.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
 
+    # Adding a column of binary representation win loss and draw.
+    conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
+                  new_df["home_team_goal"] < new_df["away_team_goal"],
+                  new_df["home_team_goal"] == new_df["away_team_goal"]]
+
+    choices = ["1", "-1", "0"]
+    new_df["result"] = np.select(conditions, choices, default=np.nan)
+
+    null_new_df.to_csv("C:\\STUDY\\YEAR C\\SEMESTER B\\סדנת הכנה לפרויקט\\עבודות\\3\\CSV\\database_null.csv")
+
+    new_df["season"] = np.select(["2012"], choices, default=np.nan)
+
+    # save2CVS(new_df, path)
     cursor.close()
     conn.close()
+
+    # X, y = np.arange(10).reshape((30, 2)), range(30)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    # # clf = svm.SVC(kernel=‘rbf)
+    # # clf.fit(X_train, y_train)
+    # # clf.predict(X_test)
+
+
