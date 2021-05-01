@@ -2,6 +2,9 @@ import sqlite3
 from aifc import Error
 import numpy as np
 import pandas as pd
+from scipy.interpolate import rbf
+from sklearn.model_selection import train_test_split
+from sklearn import svm
 
 
 def create_connection(db_file):
@@ -56,12 +59,12 @@ def create_table(cursor):
 
 
 def save2CVS(database_after_clean, file_path):
-    database_after_clean.to_csv(file_path + "database_after_clean.csv")
+    database_after_clean.to_csv(
+        "C:\\STUDY\\YEAR C\\SEMESTER B\\סדנת הכנה לפרויקט\\עבודות\\3\\CSV\\database_after_clean.csv")
 
 
 def init():
-    path = "C:\\Users\\biran\\Desktop\\3\\database.sqlite\\"
-    database = path + "database.sqlite"
+    database = r"C:\STUDY\YEAR C\SEMESTER B\סדנת הכנה לפרויקט\עבודות\3\database.sqlite"
     """
     Country = { id , name }
     League = { id , country_id , name  }
@@ -113,6 +116,18 @@ def init():
     choices = ["1", "-1", "0"]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
 
+    null_new_df.to_csv("C:\\STUDY\\YEAR C\\SEMESTER B\\סדנת הכנה לפרויקט\\עבודות\\3\\CSV\\database_null.csv")
+
+    new_df["season"] = np.select(["2012"], choices, default=np.nan)
+
     # save2CVS(new_df, path)
     cursor.close()
     conn.close()
+
+    # X, y = np.arange(10).reshape((30, 2)), range(30)
+    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    # # clf = svm.SVC(kernel=‘rbf)
+    # # clf.fit(X_train, y_train)
+    # # clf.predict(X_test)
+
+
