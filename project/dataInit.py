@@ -174,6 +174,30 @@ def init():
 
     new_df_with_name = get_team_names(new_df, data_Team)
 
+
+    df_home_team_win_sum = new_df_with_name.groupby(["home_team_api_id"]).result.sum().reset_index(name="wins_home_sum")
+    df_home_team_win_count = new_df_with_name.groupby(["home_team_api_id"]).result.count().reset_index(
+        name="wins_home_count")
+    df_away_team_win_sum = new_df_with_name.groupby(["away_team_api_id"]).result.sum().reset_index(name="wins_away_sum")
+    df_away_team_win_count = new_df_with_name.groupby(["away_team_api_id"]).result.count().reset_index(
+        name="wins_away_count")
+    df_home_team_win_sum["percentHome"] = df_home_team_win_sum["wins_home_sum"] / df_home_team_win_count[
+        "wins_home_count"]
+    df_away_team_win_sum["percentAway"] = df_away_team_win_sum["wins_away_sum"] / df_away_team_win_count[
+            "wins_away_count"]
+
+    df_percent_wim = pd.merge(df_home_team_win_sum, df_away_team_win_sum, how='inner', left_on=['home_team_api_id'],
+                                  right_on=['away_team_api_id'])
+
+    conditions_percent = [df_percent_wim["percentHome"] > df_percent_wim["percentAway"],
+                          df_percent_wim["percentHome"] < df_percent_wim["percentAway"],
+                          df_percent_wim["percentHome"] == df_percent_wim["percentAway"]]
+
+    choices = ["Home", "Away", "NeverMind"]
+    df_percent_wim["whereBetter"] = np.select(conditions_percent, choices, default=np.nan)
+
+
+
     test_train_models_split(new_df_with_name)
 
     # save2CSV(new_df, path)
