@@ -1,5 +1,7 @@
 import sqlite3
 from aifc import Error
+from functools import reduce
+
 import numpy as np
 import pandas as pd
 from scipy.interpolate import rbf
@@ -9,7 +11,6 @@ from sklearn import svm
 from project import preprocessing
 
 path = "C:\\Users\\biran\\Desktop\\3\\database.sqlite\\"
-
 
 
 def create_connection(db_file):
@@ -151,7 +152,7 @@ Team_Attributes = { 25 col }
 
 def sql_q(conn):
     data_matchDF = pd.read_sql_query(
-        'SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match', conn)
+        'SELECT home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match', conn)
 
     data_Team_AttrDF = pd.read_sql_query(
         'SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,'
@@ -164,10 +165,12 @@ def sql_q(conn):
 
 
 def get_win_percent(new_df_with_name):
-    df_home_team_win_sum = new_df_with_name.groupby(["home_team_api_id", "result"]).size().reset_index(name="wins_home_sum")
+    df_home_team_win_sum = new_df_with_name.groupby(["home_team_api_id", "result"]).size().reset_index(
+        name="wins_home_sum")
     df_home_team_win_sum = df_home_team_win_sum.loc[(df_home_team_win_sum['result'] == 1)]
 
-    df_away_team_win_sum = new_df_with_name.groupby(["away_team_api_id", "result"]).size().reset_index(name="wins_away_sum")
+    df_away_team_win_sum = new_df_with_name.groupby(["away_team_api_id", "result"]).size().reset_index(
+        name="wins_away_sum")
     df_away_team_win_sum = df_away_team_win_sum.loc[(df_away_team_win_sum['result'] == -1)]
 
     df_home_team_total_count = new_df_with_name.groupby(["home_team_api_id"]).result.count().reset_index(
@@ -182,11 +185,20 @@ def get_win_percent(new_df_with_name):
     df_home_team_win_sum = df_home_team_win_sum.merge(df_home_team_total_count, on=['home_team_api_id'], how='left')
     df_away_team_win_sum = df_away_team_win_sum.merge(df_away_team_total_count, on=['away_team_api_id'], how='left')
 
-    df_away_team_win_sum['percentAway'] = df_away_team_win_sum[['wins_away_sum']].div(df_away_team_win_sum['away_count'], axis=0)
-    df_home_team_win_sum['percentHome'] = df_home_team_win_sum[['wins_home_sum']].div(df_home_team_win_sum['home_count'], axis=0)
+    df_away_team_win_sum['percentAway'] = df_away_team_win_sum[['wins_away_sum']].div(
+        df_away_team_win_sum['away_count'], axis=0)
+    df_home_team_win_sum['percentHome'] = df_home_team_win_sum[['wins_home_sum']].div(
+        df_home_team_win_sum['home_count'], axis=0)
 
-    df_percent_wim = pd.merge(df_home_team_win_sum, df_away_team_win_sum, how='inner', left_on=['home_team_api_id'],
-                              right_on=['away_team_api_id'])
+    df_home_team_win_sum = df_home_team_win_sum.rename(columns={'home_team_api_id': 'team_api_id'}, inplace=False)
+    df_away_team_win_sum = df_away_team_win_sum.rename(columns={'away_team_api_id': 'team_api_id'}, inplace=False)
+
+    df_percent_wim = pd.merge(df_home_team_win_sum, df_away_team_win_sum, how='outer', left_on=['team_api_id'],
+                              right_on=['team_api_id'])
+
+    df_percent_wim = df_percent_wim[['team_api_id', 'percentHome', 'percentAway']].copy()
+    df_percent_wim['percentHome'].fillna(0, inplace=True)
+    df_percent_wim['percentAway'].fillna(0, inplace=True)
 
     conditions_percent = [df_percent_wim["percentHome"] > df_percent_wim["percentAway"],
                           df_percent_wim["percentHome"] < df_percent_wim["percentAway"],
@@ -210,7 +222,6 @@ def addingResultFeature(new_df):
     return new_df
 
 
-
 def resultToCategorical(new_df):
     # Adding a column of binary representation win loss and draw.
     conditions = [new_df["result"] == 1,
@@ -226,7 +237,6 @@ def resultToCategorical(new_df):
 
 
 def clearUnusedFeatures(new_df):
-
     del new_df["home_team_goal"]
     del new_df["away_team_goal"]
     del new_df["season"]
@@ -235,7 +245,6 @@ def clearUnusedFeatures(new_df):
     del new_df["away_team_api_id"]
 
     return new_df
-
 
 
 def init():
@@ -259,35 +268,39 @@ def init():
     print(new_null_df_15_16.apply(lambda x: sum(x.isnull()), axis=0))
     ##############################################################
 
-
     # Adding Class Result To The Data
     new_df = addingResultFeature(new_df)
 
     # Binning To The Number Of Goals
     new_df = preprocessing.binGoals(new_df)
 
-
     new_df_with_name = get_team_names(new_df, data_Team)
-    df_2012_2013_2014_before_WB = new_df_with_name.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    df_2012_2013_2014_before_WB = new_df_with_name.loc[
+        (new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
     df_15_16_before_WB = new_df_with_name.loc[(new_df_with_name['season'].isin(["2015/2016"]))]
 
     df_percent_win_12_13_14 = get_win_percent(df_2012_2013_2014_before_WB)
     df_percent_win_15_16 = get_win_percent(df_15_16_before_WB)
 
-    df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before_WB, df_percent_win_12_13_14, how='inner', left_on=['home_team_api_id'],
-                                right_on=['home_team_api_id'])
+    df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before_WB, df_percent_win_12_13_14, how='inner',
+                                 left_on=['home_team_api_id'],
+                                 right_on=['team_api_id'])
 
-    df_15_16 = pd.merge(df_15_16_before_WB, df_percent_win_15_16, how='inner', left_on=['away_team_api_id'], right_on=['away_team_api_id'])
+    df_2012_2013_2014_2 = pd.merge(df_2012_2013_2014_before_WB, df_percent_win_12_13_14, how='outer',
+                                 left_on=['home_team_api_id'],
+                                 right_on=['team_api_id'])
 
+    df_15_16 = pd.merge(df_15_16_before_WB, df_percent_win_15_16, how='inner', left_on=['away_team_api_id'],
+                        right_on=['away_team_api_id'])
 
 
     # Convert Class Result To Categorical
     new_df = resultToCategorical(new_df)
 
-    df_2012_2013_2014 = clearUnusedFeatures(df_2012_2013_2014)
-    df_15_16 = clearUnusedFeatures(df_15_16)
+    # df_2012_2013_2014 = clearUnusedFeatures(df_2012_2013_2014)
+    # df_15_16 = clearUnusedFeatures(df_15_16)
 
-    # test_train_models_split(new_df_with_name)
+    test_train_models_split(new_df_with_name)
 
     # save2CSV(new_df, path)
     cursor.close()

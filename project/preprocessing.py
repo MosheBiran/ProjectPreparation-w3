@@ -2,7 +2,6 @@ import pandas as pd
 import matplotlib as plt
 import numpy as np
 from matplotlib.pyplot import show
-import shap
 
 
 def binning(col, cut_points, labels=None):
@@ -13,11 +12,10 @@ def binning(col, cut_points, labels=None):
     break_points = [minval] + cut_points + [maxval]
     # if no labels provided, use default labels 0 ... (n-1)
     if not labels:
-        labels = range(len(cut_points)+1)
+        labels = range(len(cut_points) + 1)
     # Binning using cut function of pandas
     colBin = pd.cut(col, bins=break_points, labels=labels, include_lowest=True)
     return colBin
-
 
 
 def check_data():
@@ -42,9 +40,6 @@ def check_data():
     temp3 = pd.crosstab(df['stage'], df['result'])
     temp3.plot(kind='bar', stacked=True, color=['red', 'blue', 'green'], grid=False)
     show()
-
-
-
 
     # bins = [1, 2, 3]
     # group_names = ['0', '1', '2', '3+']
@@ -79,6 +74,3 @@ def binGoals(df):
     df["away_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
 
     return df
-
-
-
