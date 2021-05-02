@@ -11,7 +11,7 @@ from sklearn import svm
 
 from project import preprocessing
 
-path = "C:\\Users\\Daniel\\Downloads\\archive\\"
+path = "C:\\Users\\liadn\\Downloads\\"
 
 
 
