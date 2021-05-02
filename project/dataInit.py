@@ -218,11 +218,10 @@ def init():
     new_df["result"] = new_df["result"].astype(int)
 
     new_df_with_name = get_team_names(new_df, data_Team)
-    df_2012_2013_2014 = new_df.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    df_2012_2013_2014 = new_df_with_name.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
     df_percent_wim = get_win_percent(df_2012_2013_2014)
 
     # test_train_models_split(new_df_with_name)
 
-    # save2CSV(new_df, path)
     cursor.close()
     conn.close()
