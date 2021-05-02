@@ -2,11 +2,12 @@ import sqlite3
 from aifc import Error
 import numpy as np
 import pandas as pd
+from matplotlib.pyplot import show
 from scipy.interpolate import rbf
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 
-path = "C:\\Users\\biran\\Desktop\\3\\database.sqlite\\"
+path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
 
 def create_connection(db_file):
@@ -218,7 +219,11 @@ def init():
     new_df["result"] = new_df["result"].astype(int)
 
     new_df_with_name = get_team_names(new_df, data_Team)
-    df_2012_2013_2014 = new_df.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    df_2012_2013_2014 = new_df_with_name.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    print(df_2012_2013_2014["stage"].value_counts())
+    df_2012_2013_2014["stage"].hist()
+    show()
+    df_15_16 = new_df_with_name.loc[(new_df_with_name['season'].isin(["2015/2016"]))]
     df_percent_wim = get_win_percent(df_2012_2013_2014)
 
     # test_train_models_split(new_df_with_name)
