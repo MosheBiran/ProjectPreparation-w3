@@ -137,6 +137,7 @@ def init():
     new_df["result"] = np.select(conditions, choices, default=np.nan)
 
     df_2012_2013_2014 = new_df.loc[(new_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    df_2012_2013_2014.to_csv('2012_2013_2014.csv')
     df_2015_2016 = new_df.loc[(new_df['season'].isin(["2015/2016"]))]
 
     # save2CVS(new_df, path)

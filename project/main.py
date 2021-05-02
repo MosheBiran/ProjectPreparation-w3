@@ -2,5 +2,5 @@ import dataInit
 import preprocessing
 
 if __name__ == '__main__':
-    # dataInit.init()
+    #dataInit.init()
     preprocessing.check_data()
