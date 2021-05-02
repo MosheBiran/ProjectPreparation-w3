@@ -266,17 +266,23 @@ def init():
     # Binning To The Number Of Goals
     new_df = preprocessing.binGoals(new_df)
 
-    # Convert Class Result To Categorical
-    new_df = resultToCategorical(new_df)
 
     new_df_with_name = get_team_names(new_df, data_Team)
-    df_2012_2013_2014 = new_df_with_name.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
-    df_15_16 = new_df_with_name.loc[(new_df_with_name['season'].isin(["2015/2016"]))]
-    df_percent_win_15_16 = get_win_percent(df_15_16)
-    df_percent_win_12_13_14 = get_win_percent(df_2012_2013_2014)
+    df_2012_2013_2014_before_WB = new_df_with_name.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    df_15_16_before_WB = new_df_with_name.loc[(new_df_with_name['season'].isin(["2015/2016"]))]
+
+    df_percent_win_12_13_14 = get_win_percent(df_2012_2013_2014_before_WB)
+    df_percent_win_15_16 = get_win_percent(df_15_16_before_WB)
+
+    df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before_WB, df_percent_win_12_13_14, how='inner', left_on=['home_team_api_id'],
+                                right_on=['home_team_api_id'])
+
+    df_15_16 = pd.merge(df_15_16_before_WB, df_percent_win_15_16, how='inner', left_on=['away_team_api_id'], right_on=['away_team_api_id'])
 
 
 
+    # Convert Class Result To Categorical
+    new_df = resultToCategorical(new_df)
 
     df_2012_2013_2014 = clearUnusedFeatures(df_2012_2013_2014)
     df_15_16 = clearUnusedFeatures(df_15_16)
