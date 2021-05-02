@@ -1,14 +1,17 @@
 import sqlite3
 from aifc import Error
+from functools import reduce
+
 import numpy as np
 import pandas as pd
+from matplotlib.pyplot import show
 from scipy.interpolate import rbf
 from sklearn.model_selection import train_test_split
 from sklearn import svm
+
 from project import preprocessing
 
-path = "C:\\Users\\liadn\\Downloads\\"
-
+path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
 
 
@@ -27,47 +30,25 @@ def create_connection(db_file):
     return conn
 
 
-def select_all_tasks(conn):
-    """
-    Query all rows in the tasks table
-    :param conn: the Connection object
-    :return:
-    """
-    cur = conn.cursor()
-    cur.execute("SELECT *")
-
-    rows = cur.fetchall()
-
-    for row in rows:
-        print(row)
-
-
-def select_task_by_table(conn, table):
-    """
-    Query tasks by table
-    :param conn: the Connection object
-    :param table:
-    :return:
-    """
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM " + table)
-
-    rows = cur.fetchall()
-
-    for row in rows:
-        print(row)
-
-
-def create_table(cursor):
-    cursor.execute('''create table data (field1 real, field2 real, field3 real,    field4 real)''')
-    cursor.commit()
-
-
 def save2CSV(database_after_clean, file_path):
+    """
+    Save The Database As CSV File
+    :param database_after_clean: The data that we want to save in CSV
+    :param file_path: The Path where we want to save the database as CSV
+    """
     database_after_clean.to_csv(file_path + "database_after_clean.csv")
 
 
-def dataframe_filter(data_match_df, data_team_attr_df):
+def mergeMatchWithTeamAttribute(data_match_df, data_team_attr_df):
+    """
+    Merging The Data Of:
+    -The Matches With
+    -The Data Attributes Of Each Team Playing in Each Match
+    ** Without Null **
+    :param data_match_df: The Data about the matches
+    :param data_team_attr_df: The Data about the team and there attributes
+    :return: The Data merged with the matches and the attributes of the teams in the match - ** Without Null **
+    """
     # Clearing the date from day and month
     data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
     data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
@@ -87,7 +68,16 @@ def dataframe_filter(data_match_df, data_team_attr_df):
     return new_df_inner
 
 
-def dataframe_filter_null(data_match_df, data_team_attr_df):
+def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
+    """
+    Merging The Data Of:
+    -The Matches With
+    -The Data Attributes Of Each Team Playing in Each Match
+    ** With Null **
+    :param data_match_df: The Data about the matches
+    :param data_team_attr_df: The Data about the team and there attributes
+    :return: The Data merged with the matches and the attributes of the teams in the match - With Null
+    """
     # Clearing the date from day and month
     data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
     data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
@@ -107,15 +97,13 @@ def dataframe_filter_null(data_match_df, data_team_attr_df):
     return new_df_outer
 
 
-def test_train_models_split(new_df):
-    df_2012_2013_2014 = new_df.loc[(new_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
-    df_2015_2016 = new_df.loc[(new_df['season'].isin(["2015/2016"]))]
-    df_2012_2013_2014.to_csv(path + "df_2012_2013_2014.csv")
-    df_2015_2016.to_csv(path + "df_2015_2016.csv")
-    return df_2012_2013_2014, df_2015_2016
-
-
-def get_team_names(new_df, data_team):
+def addTeamNames(new_df, data_team):
+    """
+    Add Into The Data The Teams Unique Names According The Team Api ID
+    :param new_df: The Data that we want to add the teams names
+    :param data_team: The Data with the teams names
+    :return: The Final Data With The Teams Names Inside
+    """
     new_df_with_name = pd.merge(data_team, new_df, how='inner', left_on=['team_api_id'],
                                 right_on=['away_team_api_id'])
 
@@ -124,7 +112,16 @@ def get_team_names(new_df, data_team):
 
     del new_df_with_name['team_api_id_x']
     del new_df_with_name['team_api_id_y']
+    new_df_with_name = remove_x_y(new_df_with_name)
+    return new_df_with_name
 
+
+def remove_x_y(new_df_with_name):
+    """
+    Removing From The Features Names the "_x" And "_y" -> "home_" And "away_"
+    :param new_df_with_name: The Data that we want to convert
+    :return: The Data After The Convert
+    """
     for col in new_df_with_name.columns:
         if '_x' == col[len(col) - 2:len(col)]:
             new_df_with_name = new_df_with_name.rename(
@@ -138,20 +135,15 @@ def get_team_names(new_df, data_team):
     return new_df_with_name
 
 
-"""
-Country = { id , name }
-League = { id , country_id , name  }
-Match = { id , country_id , league_id ... 115 column }
-Player = { id , player_api_id , player_name , player_fifa_api_id , birthday , height , weight }
-Player_Attributes = { 42 col }
-Team = {id , team_api_id , team_fifa_api_id , team_long_name , team_short_name }
-Team_Attributes = { 25 col }
-"""
 
-
-def sql_q(conn):
+def sqlQuery(conn):
+    """
+    The SQL Queries For Getting The Data From The SQL Database
+    :param conn: The Connection
+    :return: The SQL Data As DataFrames - Match_DF, TeamAttributes_DF, Teams_DF
+    """
     data_matchDF = pd.read_sql_query(
-        'SELECT home_team_api_id,away_team_api_id,season,stage,date,home_team_goal,away_team_goal from Match', conn)
+        'SELECT home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match', conn)
 
     data_Team_AttrDF = pd.read_sql_query(
         'SELECT team_api_id,date,buildUpPlaySpeedClass,buildUpPlayDribblingClass,buildUpPlayPassingClass,'
@@ -163,11 +155,21 @@ def sql_q(conn):
     return data_matchDF, data_Team_AttrDF, data_Team
 
 
-def get_win_percent(new_df_with_name):
-    df_home_team_win_sum = new_df_with_name.groupby(["home_team_api_id", "result"]).size().reset_index(name="wins_home_sum")
+def getWhereBetterHomeOrAway(new_df_with_name):
+    """
+    Calculate Where The Team Better Playing
+    -At Home
+    -Away
+    -NeverMind
+    :param new_df_with_name: The Data with all features we need to calculate
+    :return: Dataframe With Team ID And The Result Where Better
+    """
+    df_home_team_win_sum = new_df_with_name.groupby(["home_team_api_id", "result"]).size().reset_index(
+        name="wins_home_sum")
     df_home_team_win_sum = df_home_team_win_sum.loc[(df_home_team_win_sum['result'] == 1)]
 
-    df_away_team_win_sum = new_df_with_name.groupby(["away_team_api_id", "result"]).size().reset_index(name="wins_away_sum")
+    df_away_team_win_sum = new_df_with_name.groupby(["away_team_api_id", "result"]).size().reset_index(
+        name="wins_away_sum")
     df_away_team_win_sum = df_away_team_win_sum.loc[(df_away_team_win_sum['result'] == -1)]
 
     df_home_team_total_count = new_df_with_name.groupby(["home_team_api_id"]).result.count().reset_index(
@@ -182,11 +184,20 @@ def get_win_percent(new_df_with_name):
     df_home_team_win_sum = df_home_team_win_sum.merge(df_home_team_total_count, on=['home_team_api_id'], how='left')
     df_away_team_win_sum = df_away_team_win_sum.merge(df_away_team_total_count, on=['away_team_api_id'], how='left')
 
-    df_away_team_win_sum['percentAway'] = df_away_team_win_sum[['wins_away_sum']].div(df_away_team_win_sum['away_count'], axis=0)
-    df_home_team_win_sum['percentHome'] = df_home_team_win_sum[['wins_home_sum']].div(df_home_team_win_sum['home_count'], axis=0)
+    df_away_team_win_sum['percentAway'] = df_away_team_win_sum[['wins_away_sum']].div(
+        df_away_team_win_sum['away_count'], axis=0)
+    df_home_team_win_sum['percentHome'] = df_home_team_win_sum[['wins_home_sum']].div(
+        df_home_team_win_sum['home_count'], axis=0)
 
-    df_percent_wim = pd.merge(df_home_team_win_sum, df_away_team_win_sum, how='inner', left_on=['home_team_api_id'],
-                              right_on=['away_team_api_id'])
+    df_home_team_win_sum = df_home_team_win_sum.rename(columns={'home_team_api_id': 'team_api_id'}, inplace=False)
+    df_away_team_win_sum = df_away_team_win_sum.rename(columns={'away_team_api_id': 'team_api_id'}, inplace=False)
+
+    df_percent_wim = pd.merge(df_home_team_win_sum, df_away_team_win_sum, how='outer', left_on=['team_api_id'],
+                              right_on=['team_api_id'])
+
+    df_percent_wim = df_percent_wim[['team_api_id', 'percentHome', 'percentAway']].copy()
+    df_percent_wim['percentHome'].fillna(0, inplace=True)
+    df_percent_wim['percentAway'].fillna(0, inplace=True)
 
     conditions_percent = [df_percent_wim["percentHome"] > df_percent_wim["percentAway"],
                           df_percent_wim["percentHome"] < df_percent_wim["percentAway"],
@@ -198,6 +209,15 @@ def get_win_percent(new_df_with_name):
 
 
 def addingResultFeature(new_df):
+    """
+    Add Result Label For Each Game - According To The Home Team
+    "Home Team Goals" - "Away Team Goals"
+     1 = Win
+     0 = Draw
+    -1 = Lose
+    :param new_df: The Dataframe to Add The Label
+    :return:The Data After Adding The Label "Result"
+    """
     # Adding a column of binary representation win loss and draw.
     conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
                   new_df["home_team_goal"] < new_df["away_team_goal"],
@@ -210,8 +230,12 @@ def addingResultFeature(new_df):
     return new_df
 
 
-
 def resultToCategorical(new_df):
+    """
+    Converting the result feature from int to categorical [1, 0, -1] -> ["Win", "Draw", "Lose"]
+    :param new_df: The Dataframe that needed to convert
+    :return: The Dataframe after the convert
+    """
     # Adding a column of binary representation win loss and draw.
     conditions = [new_df["result"] == 1,
                   new_df["result"] == 0,
@@ -226,19 +250,64 @@ def resultToCategorical(new_df):
 
 
 def clearUnusedFeatures(new_df):
-
+    """
+    Cleaning The Features That We No Longer Needed
+    After The Init And
+    Before The Train
+    :param new_df: The Dataframe that we need to clear
+    :return: The Dataframe after clean
+    """
     del new_df["home_team_goal"]
     del new_df["away_team_goal"]
     del new_df["season"]
     del new_df["date"]
     del new_df["home_team_api_id"]
     del new_df["away_team_api_id"]
+    del new_df["home_percentHome"]
+    del new_df["home_percentAway"]
+    del new_df["away_percentHome"]
+    del new_df["away_percentAway"]
 
     return new_df
 
 
+def margeWhereBetterWithMainData(df_2012_2013_2014_before, df_15_16_before):
+    """
+    Merging The Dataframe Of Where Better With The Main Dataframe
+    :param df_2012_2013_2014_before: The Main Dataframe without "whereBetter"
+    :param df_15_16_before: The Dataframe Of "whereBetter"
+    :return: The Main Dataframe With The Feature "whereBetter"  - Train, Test
+    """
+    df_percent_win_12_13_14 = getWhereBetterHomeOrAway(df_2012_2013_2014_before)
+    df_percent_win_15_16 = getWhereBetterHomeOrAway(df_15_16_before)
+
+    df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before, df_percent_win_12_13_14, how='inner',
+                                 left_on=['home_team_api_id'],
+                                 right_on=['team_api_id'])
+
+    df_2012_2013_2014 = pd.merge(df_2012_2013_2014, df_percent_win_12_13_14, how='inner',
+                                 left_on=['away_team_api_id'],
+                                 right_on=['team_api_id'])
+
+    df_15_16 = pd.merge(df_15_16_before, df_percent_win_15_16, how='inner',
+                        left_on=['home_team_api_id'],
+                        right_on=['team_api_id'])
+
+    df_15_16 = pd.merge(df_15_16, df_percent_win_15_16, how='inner',
+                        left_on=['away_team_api_id'],
+                        right_on=['team_api_id'])
+
+    df_2012_2013_2014 = remove_x_y(df_2012_2013_2014)
+    df_15_16 = remove_x_y(df_15_16)
+
+    return df_2012_2013_2014, df_15_16
+
 
 def init():
+    """
+    The Init And Building The Data From The Model Training And Testing
+    :return: The Train Data , Test Data
+    """
     database = path + "database.sqlite"
 
     # create a database connection
@@ -246,50 +315,36 @@ def init():
     cursor = conn.cursor()
 
     # create DF
-    data_matchDF, data_Team_AttrDF, data_Team = sql_q(conn)
+    match_Data_DF, team_Attr_Data_DF, teams_Data_DF = sqlQuery(conn)
 
-    data_Team = data_Team.sort_values(by=['team_api_id'])
+    teams_Data_DF = teams_Data_DF.sort_values(by=['team_api_id'])
 
-    new_df = dataframe_filter(data_matchDF, data_Team_AttrDF)
+    matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
 
-    #############################################################
-    # DF With Null
-    new_null_df = dataframe_filter_null(data_matchDF, data_Team_AttrDF)
-    new_null_df_15_16 = new_null_df.loc[(new_null_df['season'].isin(["2015/2016"]))]
-    print(new_null_df_15_16.apply(lambda x: sum(x.isnull()), axis=0))
-    ##############################################################
+    # Adding Label Result To The Data
+    matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
 
+    # Binning - The Number Of Goals
+    matchWithTeamAttributes_df = preprocessing.binGoals(matchWithTeamAttributes_df)
 
-    # Adding Class Result To The Data
-    new_df = addingResultFeature(new_df)
+    # Adding The Names Of The Teams
+    dataWithTeamNames = addTeamNames(matchWithTeamAttributes_df, teams_Data_DF)
 
-    # Binning To The Number Of Goals
-    new_df = preprocessing.binGoals(new_df)
+    # Calculate Where The Team Playing Better
+    trainData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    testData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2015/2016"]))]
 
-
-    new_df_with_name = get_team_names(new_df, data_Team)
-    df_2012_2013_2014_before_WB = new_df_with_name.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
-    df_15_16_before_WB = new_df_with_name.loc[(new_df_with_name['season'].isin(["2015/2016"]))]
-
-    df_percent_win_12_13_14 = get_win_percent(df_2012_2013_2014_before_WB)
-    df_percent_win_15_16 = get_win_percent(df_15_16_before_WB)
-
-
-    df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before_WB, df_percent_win_12_13_14, how='inner', left_on=['home_team_api_id'],
-                                right_on=['home_team_api_id'])
-
-    df_15_16 = pd.merge(df_15_16_before_WB, df_percent_win_15_16, how='inner', left_on=['away_team_api_id'], right_on=['away_team_api_id'])
-
-
+    # Merging WhereBetter With Main Data
+    trainData, testData = margeWhereBetterWithMainData(trainData_before_WB, testData_before_WB)
 
     # Convert Class Result To Categorical
-    new_df = resultToCategorical(new_df)
+    trainData = resultToCategorical(trainData)
+    testData = resultToCategorical(testData)
 
-    df_2012_2013_2014 = clearUnusedFeatures(df_2012_2013_2014)
-    df_15_16 = clearUnusedFeatures(df_15_16)
+    trainData = clearUnusedFeatures(trainData)
+    testData = clearUnusedFeatures(testData)
 
-    # test_train_models_split(new_df_with_name)
-
-    # save2CSV(new_df, path)
     cursor.close()
     conn.close()
+
+    return trainData, testData
