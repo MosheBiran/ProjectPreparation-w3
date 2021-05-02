@@ -7,4 +7,4 @@ X_train, X_test, y_train, y_test = train_test_split( X, y, test_size=0.1, random
 # clf.fit(X_train, y_train)
 # clf.predict(X_test)
 
-#from the matzeget of the hartzaa
+# from the matzeget of the hartzaa

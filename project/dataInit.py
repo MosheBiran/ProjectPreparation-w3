@@ -66,6 +66,11 @@ def create_table(cursor):
 
 
 def save2CSV(database_after_clean, file_path):
+    """
+    Save The Database As CSV File
+    :param database_after_clean: The data that we want to save in CSV
+    :param file_path: The Path where we want to save the database as CSV
+    """
     database_after_clean.to_csv(file_path + "database_after_clean.csv")
 
 
@@ -224,6 +229,11 @@ def addingResultFeature(new_df):
 
 
 def resultToCategorical(new_df):
+    """
+    Converting the result feature from int to categorical [1, 0, -1] -> ["Win", "Draw", "Lose"]
+    :param new_df: The Dataframe that needed to convert
+    :return: The Dataframe after the convert
+    """
     # Adding a column of binary representation win loss and draw.
     conditions = [new_df["result"] == 1,
                   new_df["result"] == 0,
@@ -238,6 +248,13 @@ def resultToCategorical(new_df):
 
 
 def clearUnusedFeatures(new_df):
+    """
+    Cleaning The Features That We No Longer Needed
+    After The Init And
+    Before The Train
+    :param new_df: The Dataframe that we need to clear
+    :return: The Dataframe after clean
+    """
     del new_df["home_team_goal"]
     del new_df["away_team_goal"]
     del new_df["season"]
@@ -249,6 +266,9 @@ def clearUnusedFeatures(new_df):
 
 
 def init():
+    """
+    The Init And Building The Data From The Model Training And Testing
+    """
     database = path + "database.sqlite"
 
     # create a database connection
