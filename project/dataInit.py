@@ -5,9 +5,10 @@ import pandas as pd
 from scipy.interpolate import rbf
 from sklearn.model_selection import train_test_split
 from sklearn import svm
+from project import preprocessing
 
 path = "C:\\Users\\liadn\\Downloads\\"
-from project import preprocessing
+
 
 
 
@@ -272,6 +273,7 @@ def init():
 
     df_percent_win_12_13_14 = get_win_percent(df_2012_2013_2014_before_WB)
     df_percent_win_15_16 = get_win_percent(df_15_16_before_WB)
+
 
     df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before_WB, df_percent_win_12_13_14, how='inner', left_on=['home_team_api_id'],
                                 right_on=['home_team_api_id'])
