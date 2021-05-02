@@ -4,13 +4,14 @@ from functools import reduce
 
 import numpy as np
 import pandas as pd
+from matplotlib.pyplot import show
 from scipy.interpolate import rbf
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 
 from project import preprocessing
 
-path = "C:\\Users\\biran\\Desktop\\3\\database.sqlite\\"
+path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
 
 def create_connection(db_file):
