@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib.pyplot import show
 import shap
 
+
 def binning(col, cut_points, labels=None):
     # Define min and max values:
     minval = col.min()
@@ -43,6 +44,22 @@ def check_data():
     show()
 
 
+
+
+    # bins = [1, 2, 3]
+    # group_names = ['0', '1', '2', '3+']
+    # # Discretize the values in LoanAmount attribute
+    # df["home_team_goal_Bin"] = binning(df["home_team_goal"], bins, group_names)
+    # # Count the number of observations which each value
+    # print (pd.value_counts(df["home_team_goal_Bin"], sort=False))
+    # print(df)
+    df['home_team_goal_bin'].hist()
+    show()
+    df['away_team_goal_bin'].hist()
+    show()
+
+
+def binGoals(df):
     # Adding a column of discretization to the home goals.
     conditions = [df["home_team_goal"] == 0,
                   df["home_team_goal"] == 1,
@@ -61,16 +78,7 @@ def check_data():
     choices = ["0", "1", "2", "3+"]
     df["away_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
 
-    # bins = [1, 2, 3]
-    # group_names = ['0', '1', '2', '3+']
-    # # Discretize the values in LoanAmount attribute
-    # df["home_team_goal_Bin"] = binning(df["home_team_goal"], bins, group_names)
-    # # Count the number of observations which each value
-    # print (pd.value_counts(df["home_team_goal_Bin"], sort=False))
-    # print(df)
-    df['home_team_goal_bin'].hist()
-    show()
-    df['away_team_goal_bin'].hist()
-    show()
+    return df
+
 
 

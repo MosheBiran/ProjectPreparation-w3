@@ -7,6 +7,8 @@ from scipy.interpolate import rbf
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 
+from project import preprocessing
+
 path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
 
@@ -195,6 +197,47 @@ def get_win_percent(new_df_with_name):
     return df_percent_wim
 
 
+def addingResultFeature(new_df):
+    # Adding a column of binary representation win loss and draw.
+    conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
+                  new_df["home_team_goal"] < new_df["away_team_goal"],
+                  new_df["home_team_goal"] == new_df["away_team_goal"]]
+
+    choices = [1, -1, 0]
+    new_df["result"] = np.select(conditions, choices, default=np.nan)
+    new_df["result"] = new_df["result"].astype(int)
+
+    return new_df
+
+
+
+def resultToCategorical(new_df):
+    # Adding a column of binary representation win loss and draw.
+    conditions = [new_df["result"] == 1,
+                  new_df["result"] == 0,
+                  new_df["result"] == -1]
+
+    choices = ["Win", "Draw", "Lose"]
+    new_df["result"] = np.select(conditions, choices, default=np.nan)
+    new_df["HomeTeamResult"] = new_df["result"]
+    del new_df["result"]
+
+    return new_df
+
+
+def clearUnusedFeatures(new_df):
+
+    del new_df["home_team_goal"]
+    del new_df["away_team_goal"]
+    del new_df["season"]
+    del new_df["date"]
+    del new_df["home_team_api_id"]
+    del new_df["away_team_api_id"]
+
+    return new_df
+
+
+
 def init():
     database = path + "database.sqlite"
 
@@ -209,22 +252,34 @@ def init():
 
     new_df = dataframe_filter(data_matchDF, data_Team_AttrDF)
 
-    # Adding a column of binary representation win loss and draw.
-    conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
-                  new_df["home_team_goal"] < new_df["away_team_goal"],
-                  new_df["home_team_goal"] == new_df["away_team_goal"]]
+    #############################################################
+    # DF With Null
+    new_null_df = dataframe_filter_null(data_matchDF, data_Team_AttrDF)
+    new_null_df_15_16 = new_null_df.loc[(new_null_df['season'].isin(["2015/2016"]))]
+    print(new_null_df_15_16.apply(lambda x: sum(x.isnull()), axis=0))
+    ##############################################################
 
-    choices = [1, -1, 0]
-    new_df["result"] = np.select(conditions, choices, default=np.nan)
-    new_df["result"] = new_df["result"].astype(int)
+
+    # Adding Class Result To The Data
+    new_df = addingResultFeature(new_df)
+
+    # Binning To The Number Of Goals
+    new_df = preprocessing.binGoals(new_df)
+
+    # Convert Class Result To Categorical
+    new_df = resultToCategorical(new_df)
 
     new_df_with_name = get_team_names(new_df, data_Team)
     df_2012_2013_2014 = new_df_with_name.loc[(new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
-    print(df_2012_2013_2014["stage"].value_counts())
-    df_2012_2013_2014["stage"].hist()
-    show()
     df_15_16 = new_df_with_name.loc[(new_df_with_name['season'].isin(["2015/2016"]))]
-    df_percent_wim = get_win_percent(df_2012_2013_2014)
+    df_percent_win_15_16 = get_win_percent(df_15_16)
+    df_percent_win_12_13_14 = get_win_percent(df_2012_2013_2014)
+
+
+
+
+    df_2012_2013_2014 = clearUnusedFeatures(df_2012_2013_2014)
+    df_15_16 = clearUnusedFeatures(df_15_16)
 
     # test_train_models_split(new_df_with_name)
 
