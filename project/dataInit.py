@@ -131,7 +131,11 @@ def get_team_names(new_df, data_team):
 
     del new_df_with_name['team_api_id_x']
     del new_df_with_name['team_api_id_y']
+    new_df_with_name = remove_x_y(new_df_with_name)
+    return new_df_with_name
 
+
+def remove_x_y(new_df_with_name):
     for col in new_df_with_name.columns:
         if '_x' == col[len(col) - 2:len(col)]:
             new_df_with_name = new_df_with_name.rename(
@@ -265,6 +269,32 @@ def clearUnusedFeatures(new_df):
     return new_df
 
 
+def marge_win_percent(df_2012_2013_2014_before, df_15_16_before):
+    df_percent_win_12_13_14 = get_win_percent(df_2012_2013_2014_before)
+    df_percent_win_15_16 = get_win_percent(df_15_16_before)
+
+    df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before, df_percent_win_12_13_14, how='inner',
+                                 left_on=['home_team_api_id'],
+                                 right_on=['team_api_id'])
+
+    df_2012_2013_2014 = pd.merge(df_2012_2013_2014, df_percent_win_12_13_14, how='inner',
+                                 left_on=['away_team_api_id'],
+                                 right_on=['team_api_id'])
+
+    df_15_16 = pd.merge(df_15_16_before, df_percent_win_15_16, how='inner',
+                        left_on=['home_team_api_id'],
+                        right_on=['team_api_id'])
+
+    df_15_16 = pd.merge(df_15_16, df_percent_win_15_16, how='inner',
+                        left_on=['away_team_api_id'],
+                        right_on=['team_api_id'])
+
+    df_2012_2013_2014 = remove_x_y(df_2012_2013_2014)
+    df_15_16 = remove_x_y(df_15_16)
+
+    return df_2012_2013_2014, df_15_16
+
+
 def init():
     """
     The Init And Building The Data From The Model Training And Testing
@@ -300,20 +330,7 @@ def init():
         (new_df_with_name['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
     df_15_16_before_WB = new_df_with_name.loc[(new_df_with_name['season'].isin(["2015/2016"]))]
 
-    df_percent_win_12_13_14 = get_win_percent(df_2012_2013_2014_before_WB)
-    df_percent_win_15_16 = get_win_percent(df_15_16_before_WB)
-
-    df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before_WB, df_percent_win_12_13_14, how='inner',
-                                 left_on=['home_team_api_id'],
-                                 right_on=['team_api_id'])
-
-    df_2012_2013_2014_2 = pd.merge(df_2012_2013_2014_before_WB, df_percent_win_12_13_14, how='outer',
-                                 left_on=['home_team_api_id'],
-                                 right_on=['team_api_id'])
-
-    df_15_16 = pd.merge(df_15_16_before_WB, df_percent_win_15_16, how='inner', left_on=['away_team_api_id'],
-                        right_on=['away_team_api_id'])
-
+    df_2012_2013_2014, df_15_16 = marge_win_percent(df_2012_2013_2014_before_WB, df_15_16_before_WB)
 
     # Convert Class Result To Categorical
     new_df = resultToCategorical(new_df)
