@@ -1,4 +1,4 @@
 import dataInit
 
 if __name__ == '__main__':
-    dataInit.init()
+    trainData, testData = dataInit.init()

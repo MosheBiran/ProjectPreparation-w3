@@ -4,18 +4,31 @@ import numpy as np
 from matplotlib.pyplot import show
 
 
-def binning(col, cut_points, labels=None):
-    # Define min and max values:
-    minval = col.min()
-    maxval = col.max()
-    # create list by adding min and max to cut_points
-    break_points = [minval] + cut_points + [maxval]
-    # if no labels provided, use default labels 0 ... (n-1)
-    if not labels:
-        labels = range(len(cut_points) + 1)
-    # Binning using cut function of pandas
-    colBin = pd.cut(col, bins=break_points, labels=labels, include_lowest=True)
-    return colBin
+def binGoals(df):
+    """
+    Binning The Goals Number Into Better Distribution
+    :param df: The DataFrame That Contain The Goals Before The Binning
+    :return: The DataFrame After The Binning
+    """
+    # Adding a column of discretization to the home goals.
+    conditions = [df["home_team_goal"] == 0,
+                  df["home_team_goal"] == 1,
+                  df["home_team_goal"] == 2,
+                  df["home_team_goal"] >= 3]
+
+    choices = ["0", "1", "2", "3+"]
+    df["home_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
+
+    # Adding a column of discretization to the away goals.
+    conditions = [df["away_team_goal"] == 0,
+                  df["away_team_goal"] == 1,
+                  df["away_team_goal"] == 2,
+                  df["away_team_goal"] >= 3]
+
+    choices = ["0", "1", "2", "3+"]
+    df["away_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
+
+    return df
 
 
 def check_data():
@@ -52,25 +65,3 @@ def check_data():
     show()
     df['away_team_goal_bin'].hist()
     show()
-
-
-def binGoals(df):
-    # Adding a column of discretization to the home goals.
-    conditions = [df["home_team_goal"] == 0,
-                  df["home_team_goal"] == 1,
-                  df["home_team_goal"] == 2,
-                  df["home_team_goal"] >= 3]
-
-    choices = ["0", "1", "2", "3+"]
-    df["home_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
-
-    # Adding a column of discretization to the away goals.
-    conditions = [df["away_team_goal"] == 0,
-                  df["away_team_goal"] == 1,
-                  df["away_team_goal"] == 2,
-                  df["away_team_goal"] >= 3]
-
-    choices = ["0", "1", "2", "3+"]
-    df["away_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
-
-    return df
