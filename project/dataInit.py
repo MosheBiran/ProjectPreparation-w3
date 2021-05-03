@@ -1,18 +1,17 @@
 import sqlite3
 from aifc import Error
 from functools import reduce
+import xml.etree.ElementTree as ET
 
 import numpy as np
 import pandas as pd
-from matplotlib.pyplot import show
 from scipy.interpolate import rbf
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 
 from project import preprocessing
 
-path = "C:\\Users\\Daniel\\Downloads\\archive\\"
-
+path = "C:\\Users\\biran\\Desktop\\3\\database.sqlite\\"
 
 
 def create_connection(db_file):
@@ -77,8 +76,7 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
     :param data_match_df: The Data about the matches
     :param data_team_attr_df: The Data about the team and there attributes
     :return: The Data merged with the matches and the attributes of the teams in the match - With Null
-    """
-    # Clearing the date from day and month
+    """    # Clearing the date from day and month
     data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
     data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
 
@@ -348,3 +346,44 @@ def init():
     conn.close()
 
     return trainData, testData
+
+
+def temp():
+    database = path + "database.sqlite"
+
+    # create a database connection
+    conn = create_connection(database)
+    cursor = conn.cursor()
+
+    data_matchDF = pd.read_sql_query(
+        'SELECT home_team_api_id,away_team_api_id, shoton from Match', conn)
+
+    print(data_matchDF.apply(lambda x: sum(x.isnull()), axis=0))
+
+    for x in data_matchDF['shoton']:
+        if x is None:
+            continue
+        root = ET.XML(x)  # Parse XML
+
+        data = []
+        cols = []
+        flag = 0
+        for i, child in enumerate(root.iter()):
+            print(child.tag)
+            if child.tag == 'shoton':
+                flag += 1
+
+            if flag <= 1:
+                cols.append(child.tag)
+
+            for subchild in child:
+                data.append(subchild.text)
+
+
+
+        df = pd.DataFrame(data).T  # Write in DF and transpose it
+        df.columns = cols  # Update column names
+        print(df)
+
+    cursor.close()
+    conn.close()
