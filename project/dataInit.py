@@ -261,8 +261,8 @@ def clearUnusedFeatures(new_df):
     del new_df["away_team_goal"]
     del new_df["season"]
     del new_df["date"]
-    del new_df["home_team_api_id"]
-    del new_df["away_team_api_id"]
+    # del new_df["home_team_api_id"]
+    # del new_df["away_team_api_id"]
     del new_df["home_percentHome"]
     del new_df["home_percentAway"]
     del new_df["away_percentHome"]
@@ -325,10 +325,10 @@ def init():
     matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
 
     # Binning - The Number Of Goals
-    matchWithTeamAttributes_df = preprocessing.binGoals(matchWithTeamAttributes_df)
+    dataWithTeamNames = matchWithTeamAttributes_df = preprocessing.binGoals(matchWithTeamAttributes_df)
 
     # Adding The Names Of The Teams
-    dataWithTeamNames = addTeamNames(matchWithTeamAttributes_df, teams_Data_DF)
+    # dataWithTeamNames = addTeamNames(matchWithTeamAttributes_df, teams_Data_DF)
 
     # Calculate Where The Team Playing Better
     trainData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
