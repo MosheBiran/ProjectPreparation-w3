@@ -74,7 +74,7 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
     :param data_match_df: The Data about the matches
     :param data_team_attr_df: The Data about the team and there attributes
     :return: The Data merged with the matches and the attributes of the teams in the match - With Null
-    """    # Clearing the date from day and month
+    """  # Clearing the date from day and month
     data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
     data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
 
@@ -92,55 +92,77 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
 
     return new_df_outer
 
-def dataframe_filter_players(data_match_players_df, data_player_attr_df ):
 
+def dataframe_filter_players(data_match_players_df, player_attr_df):
     # Clearing the date from day and month
+
     data_match_players_df['date'] = data_match_players_df['date'].str.slice(stop=4)
-    data_player_attr_df['date'] = data_player_attr_df['date'].str.slice(stop=4)
-    data_player_attr_df = data_player_attr_df.groupby(['player_api_id', 'date']).mean()
-    listt = data_player_attr_df.index.values
-    id =[]
-    years = []
-    for val in listt:
-        id.append(val[0])
-        years.append(val[1])
-    data_player_attr_df['date'] = years
-    data_player_attr_df['player_api_id'] = id
-    data_player_attr_df['rating'] = data_player_attr_df['overall_rating']
-    del data_player_attr_df['overall_rating']
-    data_player_attr_df.columns.name = ''
+    player_attr_df['date'] = player_attr_df['date'].str.slice(stop=4)
 
-    data_match_players_df['sum'] = 0
-    data_match_players_df['count'] = 0
+    player_attr_df = player_attr_df.groupby(['player_api_id', 'date'], as_index=False)['overall_rating'].mean()
 
+    player_attr_df = player_attr_df.sort_values(by=['player_api_id', 'date'])
 
+    df = data_match_players_df[['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
 
-    data_match_players_df = data_match_players_df.dropna()
-    new_df_outer = pd.merge(data_match_players_df, data_player_attr_df, how='inner', left_on=['date', 'home_player_1'],
-                            right_on=['date', 'player_api_id'])
-    data_match_players_df['sum'] = data_match_players_df['sum'] +data_match_players_df['overall_rating']
-    for i in range(1, 12):
-        new_df_outer = pd.merge(data_match_players_df, data_player_attr_df, how='inner', left_on=['date', 'home_player_'+str(i)],
-                            right_on=['date', 'team_api_id'])
+    i = 0
 
+    for col in data_match_players_df.columns:
+        if "_player_" in col:
+            suffix = ("_home_" + str(i), "_home_" + str(i + 1))
+            i += 1
+            if "away_" in col:
+                suffix = ("_away_" + str(i), "_away_" + str(i + 1))
+            data_match_players_df = pd.merge(data_match_players_df, player_attr_df, how='left', left_on=['date', col], right_on=['date', 'player_api_id'], suffixes=suffix)
+            del data_match_players_df[col]
 
+    data_match_players_df = data_match_players_df.drop([col for col in data_match_players_df.columns if 'player_api_id' in col], axis=1)
 
+    home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
+    away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
 
-    for index_match, row in data_match_players_df.iterrows():
-        for index, rating in data_player_attr_df.iterrows():
-            if row['date'] == index[1]:
-                for i in range(1,12):
-                    if row['home_player_' + str(i)] == index[0]:
-                        row['sum'] += rating['overall_rating']
-                        row['count'] += 1
-                for i in range(1,12):
-                    if row['away_player_' + str(i)] == index[0]:
-                        row['sum'] += rating['overall_rating']
-                        row['count'] += 1
+    df['mean_home'] = data_match_players_df[home_col_mean_lst].mean(1)
+    df['mean_away'] = data_match_players_df[away_col_mean_lst].mean(1)
+    df['mean_home'].fillna(0, inplace=True)
+    df['mean_away'].fillna(0, inplace=True)
 
-    return data_match_players_df
+    # player_list = data_player_attr_df.index.values
+    # id =[]
+    # years = []
+    # for val in player_list:
+    #     id.append(val[0])
+    #     years.append(val[1])
+    # data_player_attr_df['date'] = years
+    # data_player_attr_df['player_api_id'] = id
+    # data_player_attr_df['rating'] = data_player_attr_df['overall_rating']
+    # del data_player_attr_df['overall_rating']
+    # data_player_attr_df.columns.name = ''
+    #
+    # data_match_players_df['sum'] = 0
+    # data_match_players_df['count'] = 0
 
+    # data_match_players_df = data_match_players_df.dropna()
+    # new_df_outer = pd.merge(data_match_players_df, data_player_attr_df, how='inner', left_on=['date', 'home_player_1'],
+    #                         right_on=['date', 'player_api_id'])
+    # data_match_players_df['sum'] = data_match_players_df['sum'] + data_match_players_df['overall_rating']
+    # for i in range(1, 12):
+    #     new_df_outer = pd.merge(data_match_players_df, data_player_attr_df, how='inner',
+    #                             left_on=['date', 'home_player_' + str(i)],
+    #                             right_on=['date', 'team_api_id'])
+    #
+    # for index_match, row in data_match_players_df.iterrows():
+    #     for index, rating in data_player_attr_df.iterrows():
+    #         if row['date'] == index[1]:
+    #             for i in range(1, 12):
+    #                 if row['home_player_' + str(i)] == index[0]:
+    #                     row['sum'] += rating['overall_rating']
+    #                     row['count'] += 1
+    #             for i in range(1, 12):
+    #                 if row['away_player_' + str(i)] == index[0]:
+    #                     row['sum'] += rating['overall_rating']
+    #                     row['count'] += 1
 
+    return df
 
 
 def addTeamNames(new_df, data_team):
@@ -181,7 +203,6 @@ def remove_x_y(new_df_with_name):
     return new_df_with_name
 
 
-
 def sqlQuery(conn):
     """
     The SQL Queries For Getting The Data From The SQL Database
@@ -209,7 +230,7 @@ def sqlQuery(conn):
         'away_player_5, away_player_6, away_player_7, away_player_8, away_player_9, away_player_10, away_player_11 '
         'from '
         'Match', conn)
-    return data_matchDF, data_Team_AttrDF, data_Team
+    return data_matchDF, data_Team_AttrDF, data_Team, data_Players_AttrDF, data_matchDF_players
 
 
 def getWhereBetterHomeOrAway(new_df_with_name):
@@ -372,9 +393,11 @@ def init():
     cursor = conn.cursor()
 
     # create DF
-    match_Data_DF, team_Attr_Data_DF, teams_Data_DF = sqlQuery(conn)
+    match_Data_DF, team_Attr_Data_DF, teams_Data_DF, data_Players_AttrDF, data_matchDF_players = sqlQuery(conn)
 
     teams_Data_DF = teams_Data_DF.sort_values(by=['team_api_id'])
+
+    Players_Attr_avg = dataframe_filter_players(data_matchDF_players, data_Players_AttrDF)
 
     matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
 
@@ -388,7 +411,8 @@ def init():
     dataWithTeamNames = addTeamNames(matchWithTeamAttributes_df, teams_Data_DF)
 
     # Calculate Where The Team Playing Better
-    trainData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    trainData_before_WB = dataWithTeamNames.loc[
+        (dataWithTeamNames['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
     testData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2015/2016"]))]
 
     # Merging WhereBetter With Main Data
