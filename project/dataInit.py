@@ -11,7 +11,7 @@ from sklearn import svm
 
 from project import preprocessing
 
-path = "C:\\Users\\biran\\Desktop\\3\\database.sqlite\\"
+path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
 
 def create_connection(db_file):
@@ -348,42 +348,3 @@ def init():
     return trainData, testData
 
 
-def temp():
-    database = path + "database.sqlite"
-
-    # create a database connection
-    conn = create_connection(database)
-    cursor = conn.cursor()
-
-    data_matchDF = pd.read_sql_query(
-        'SELECT home_team_api_id,away_team_api_id, shoton from Match', conn)
-
-    print(data_matchDF.apply(lambda x: sum(x.isnull()), axis=0))
-
-    for x in data_matchDF['shoton']:
-        if x is None:
-            continue
-        root = ET.XML(x)  # Parse XML
-
-        data = []
-        cols = []
-        flag = 0
-        for i, child in enumerate(root.iter()):
-            print(child.tag)
-            if child.tag == 'shoton':
-                flag += 1
-
-            if flag <= 1:
-                cols.append(child.tag)
-
-            for subchild in child:
-                data.append(subchild.text)
-
-
-
-        df = pd.DataFrame(data).T  # Write in DF and transpose it
-        df.columns = cols  # Update column names
-        print(df)
-
-    cursor.close()
-    conn.close()
