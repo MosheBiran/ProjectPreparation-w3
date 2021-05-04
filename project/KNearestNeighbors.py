@@ -1,41 +1,22 @@
 import random
 
-from sklearn import preprocessing
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 
-from sklearn.preprocessing import StandardScaler
-
-
-
 # https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
-
 
 dic_of_team_id = {}
 
 
 def model_KNN(trainData, testData):
 
-
-    trainData = trainData.loc[:, ~trainData.columns.duplicated()]
-
-    del trainData["home_team_api_id"]
-    del trainData["away_team_api_id"]
-
-    trainData = convertFeaturesToNumeric(trainData.copy())
-
-    ####################################################################
-    # Moshe Convert Values
-    # trainData = DataFrame_Info_String2Numeric(trainData.copy())
-    ####################################################################
-
     X = trainData.iloc[:, :-1].values
     y = trainData.iloc[:, len(trainData.columns) - 1].values
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
 
-    classifier = KNeighborsClassifier(n_neighbors=13)
+    classifier = KNeighborsClassifier(n_neighbors=5)
     classifier.fit(X_train, y_train)
 
     y_predict = classifier.predict(X_test)
@@ -46,20 +27,6 @@ def model_KNN(trainData, testData):
     print("Training data accuracy is", str(accuracy_score(y_test, y_predict)), "%")
     print("\n**************************\n")
 
-
-    #########################################
-
-    testData = testData.loc[:, ~testData.columns.duplicated()]
-
-    del testData["home_team_api_id"]
-    del testData["away_team_api_id"]
-
-    testData = convertFeaturesToNumeric(testData.copy())
-
-    ####################################################################
-    # Moshe Convert Values
-    # testData = DataFrame_Info_String2Numeric(testData.copy())
-    ####################################################################
 
 
     season_15_16_features = testData.iloc[:, :-1].values
@@ -76,10 +43,10 @@ def model_KNN(trainData, testData):
 def convertFeaturesToNumeric(dataToConvert):
     for col in dataToConvert:
         if col == "home_team_api_id":
-            # dataToConvert[col] = dataToConvert[col].apply(changeTeamID)
+            dataToConvert[col] = dataToConvert[col].apply(changeTeamID)
             continue
         if col == "away_team_api_id":
-            # dataToConvert[col] = dataToConvert[col].apply(changeTeamID)
+            dataToConvert[col] = dataToConvert[col].apply(changeTeamID)
             continue
         dataToConvert[col] = dataToConvert[col].apply(helpFuncForConvert)
 
@@ -122,14 +89,4 @@ def changeTeamID(x):
     if str(x) not in dic_of_team_id:
         dic_of_team_id[str(x)] = random.uniform(0, 3)
     return dic_of_team_id[str(x)]
-
-
-def DataFrame_Info_String2Numeric(data):
-    le = preprocessing.LabelEncoder()
-    for col in data.columns:
-        if isinstance(data[col][0], str) and "name" not in col:
-            # turn a string label into a number
-            data[col] = le.fit_transform(data[col])
-    return data
-
 

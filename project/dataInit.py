@@ -1,15 +1,11 @@
 import sqlite3
 from aifc import Error
-from functools import reduce
-import xml.etree.ElementTree as ET
 
 import numpy as np
 import pandas as pd
-from scipy.interpolate import rbf
-from sklearn.model_selection import train_test_split
-from sklearn import svm
 
-from project import preprocessing
+
+from sklearn import preprocessing
 
 path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
@@ -164,11 +160,11 @@ def getWhereBetterHomeOrAway(new_df_with_name):
     """
     df_home_team_win_sum = new_df_with_name.groupby(["home_team_api_id", "result"]).size().reset_index(
         name="wins_home_sum")
-    df_home_team_win_sum = df_home_team_win_sum.loc[(df_home_team_win_sum['result'] == 1)]
+    df_home_team_win_sum = df_home_team_win_sum.loc[(df_home_team_win_sum['result'] == 2)]
 
     df_away_team_win_sum = new_df_with_name.groupby(["away_team_api_id", "result"]).size().reset_index(
         name="wins_away_sum")
-    df_away_team_win_sum = df_away_team_win_sum.loc[(df_away_team_win_sum['result'] == -1)]
+    df_away_team_win_sum = df_away_team_win_sum.loc[(df_away_team_win_sum['result'] == 0)]
 
     df_home_team_total_count = new_df_with_name.groupby(["home_team_api_id"]).result.count().reset_index(
         name="home_count")
@@ -210,9 +206,9 @@ def addingResultFeature(new_df):
     """
     Add Result Label For Each Game - According To The Home Team
     "Home Team Goals" - "Away Team Goals"
-     1 = Win
-     0 = Draw
-    -1 = Lose
+     2 = Win
+     1 = Draw
+     0 = Lose
     :param new_df: The Dataframe to Add The Label
     :return:The Data After Adding The Label "Result"
     """
@@ -221,7 +217,7 @@ def addingResultFeature(new_df):
                   new_df["home_team_goal"] < new_df["away_team_goal"],
                   new_df["home_team_goal"] == new_df["away_team_goal"]]
 
-    choices = [1, -1, 0]
+    choices = [2, 0, 1]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
     new_df["result"] = new_df["result"].astype(int)
 
@@ -230,14 +226,14 @@ def addingResultFeature(new_df):
 
 def resultToCategorical(new_df):
     """
-    Converting the result feature from int to categorical [1, 0, -1] -> ["Win", "Draw", "Lose"]
+    Converting the result feature from int to categorical [2, 1, 0] -> ["Win", "Draw", "Lose"]
     :param new_df: The Dataframe that needed to convert
     :return: The Dataframe after the convert
     """
     # Adding a column of binary representation win loss and draw.
-    conditions = [new_df["result"] == 1,
-                  new_df["result"] == 0,
-                  new_df["result"] == -1]
+    conditions = [new_df["result"] == 2,
+                  new_df["result"] == 1,
+                  new_df["result"] == 0]
 
     choices = ["Win", "Draw", "Lose"]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
@@ -259,12 +255,15 @@ def clearUnusedFeatures(new_df):
     del new_df["away_team_goal"]
     del new_df["season"]
     del new_df["date"]
-    # del new_df["home_team_api_id"]
-    # del new_df["away_team_api_id"]
+    del new_df["home_team_api_id"]
+    del new_df["away_team_api_id"]
     del new_df["home_percentHome"]
     del new_df["home_percentAway"]
     del new_df["away_percentHome"]
     del new_df["away_percentAway"]
+
+    new_df["Result"] = new_df["result"]
+    del new_df["result"]
 
     return new_df
 
@@ -301,6 +300,17 @@ def margeWhereBetterWithMainData(df_2012_2013_2014_before, df_15_16_before):
     return df_2012_2013_2014, df_15_16
 
 
+def DataFrame_Info_String2Numeric(data):
+    le = preprocessing.LabelEncoder()
+    for col in data.columns:
+        if isinstance(data[col][0], str) and "name" not in col:
+            # turn a string label into a number
+            data[col] = le.fit_transform(data[col])
+    return data
+
+
+
+
 def init():
     """
     The Init And Building The Data From The Model Training And Testing
@@ -315,36 +325,32 @@ def init():
     # create DF
     match_Data_DF, team_Attr_Data_DF, teams_Data_DF = sqlQuery(conn)
 
-    teams_Data_DF = teams_Data_DF.sort_values(by=['team_api_id'])
-
     matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
 
     # Adding Label Result To The Data
     matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
 
-    # Binning - The Number Of Goals
-    dataWithTeamNames = matchWithTeamAttributes_df = preprocessing.binGoals(matchWithTeamAttributes_df)
-
-    # Adding The Names Of The Teams
-    # dataWithTeamNames = addTeamNames(matchWithTeamAttributes_df, teams_Data_DF)
-
     # Calculate Where The Team Playing Better
-    trainData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
-    testData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2015/2016"]))]
+    trainData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    testData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2015/2016"]))]
 
     # Merging WhereBetter With Main Data
     trainData, testData = margeWhereBetterWithMainData(trainData_before_WB, testData_before_WB)
 
-    # Convert Class Result To Categorical
-    trainData = resultToCategorical(trainData)
-    testData = resultToCategorical(testData)
+    #################################################################################################################################
+    # # Convert Class Result To Categorical  # TODO: Not Need For Categorical
+    # trainData = resultToCategorical(trainData)
+    # testData = resultToCategorical(testData)
+    #################################################################################################################################
 
     trainData = clearUnusedFeatures(trainData)
     testData = clearUnusedFeatures(testData)
+
+    trainData = DataFrame_Info_String2Numeric(trainData.copy())
+    testData = DataFrame_Info_String2Numeric(testData.copy())
 
     cursor.close()
     conn.close()
 
     return trainData, testData
-
 
