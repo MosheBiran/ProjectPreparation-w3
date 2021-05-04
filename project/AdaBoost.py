@@ -12,7 +12,7 @@ https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClass
 # that are normalized to team id
 dic_of_team_id = {}
 
-
+path = "C:\\Users\\liadn\\Downloads\\"
 # main function to run AdaBoost algorithm
 def runAdaBoost(trainData, test_15_16):
 
@@ -41,38 +41,32 @@ def runAdaBoost(trainData, test_15_16):
     # define Ada hyper params
     clf = AdaBoostClassifier(n_estimators=100, random_state=0)
 
+
     X = data
     y = label
 
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
+
+
     # start train model
-    clf.fit(X, y)
+    clf.fit(X_train, y_train)
+
 
     # prediction of trained model
-    y_pred = clf.predict(test_data)
+    y_pred = clf.predict(X_test)
 
     # calculate loss function
-    loss = my_custom_loss_func(test_label, y_pred)
+    loss = my_custom_loss_func(y_test, y_pred)
 
     # calculate confusion matrix
-    arr = confusion_matrix(test_label, y_pred)
+    arr = confusion_matrix(y_test, y_pred)
     print(arr)
     print("**********")
 
     # calculate model accuracy
-    acc = accuracy_score(test_label, y_pred)
+    acc = accuracy_score(y_test, y_pred)
     print(acc)
 
-    """
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
-    X_train = X[int(len(X) * 0.2):]
-    X_test = X[:int(len(X) * 0.2)]
-    y_train = y[int(len(X) * 0.2):]
-    y_test = y[:int(len(X) * 0.2)]
-    X, y = make_classification(n_samples=int(len(trainData)*0.8), n_features=18,
-                               n_informative=2, n_redundant=0,
-                               random_state=0, shuffle=False)
-    clf.fit(X_train, y_train)
-    """
 
 
 def my_custom_loss_func(y_true, y_pred):
