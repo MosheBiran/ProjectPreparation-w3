@@ -269,7 +269,7 @@ def addingResultFeature(new_df):
     conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
                   new_df["home_team_goal"] < new_df["away_team_goal"],
                   new_df["home_team_goal"] == new_df["away_team_goal"]]
-
+    #TODO : REMEBER CHOICES WAS [2,0,1]
     choices = [2, 0, 1]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
     new_df["result"] = new_df["result"].astype(int)
@@ -360,8 +360,6 @@ def DataFrame_Info_String2Numeric(data):
             # turn a string label into a number
             data[col] = le.fit_transform(data[col])
     return data
-
-
 
 
 def init():
