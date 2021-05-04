@@ -94,6 +94,11 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
 
 
 def dataframe_filter_players(data_match_players_df, player_attr_df):
+    """
+    :param data_match_players_df:Another frame containing player ID and that player attributes
+    :param player_attr_df:data frame containing all  matches between 2 teams include  the season and date they play against each other
+    :return:a new data frame that contains the team numbers along with the player average attributes in that season .
+    """
 
     # Clearing the date from day and month
     data_match_players_df['date'] = data_match_players_df['date'].str.slice(stop=4)
@@ -101,9 +106,7 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
 
     player_attr_df = player_attr_df.groupby(['player_api_id', 'date'], as_index=False)['overall_rating'].mean()
 
-    player_attr_df = player_attr_df.sort_values(by=['player_api_id', 'date'])
-
-    df_player_attr_mean = data_match_players_df[['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
+    HomeAndAwayTeam_player_attr_mean_df = data_match_players_df[['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
 
     for col in data_match_players_df.columns:
         if "_player_" in col:
@@ -113,17 +116,17 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
             data_match_players_df = pd.merge(data_match_players_df, player_attr_df, how='left', left_on=['date', col], right_on=['date', 'player_api_id'], suffixes=suffix)
             del data_match_players_df[col]
 
+    # removing all columns that are not relevant.
     data_match_players_df = data_match_players_df.drop([col for col in data_match_players_df.columns if 'player_api_id' in col], axis=1)
 
+    # Creating a list of all columns that relevant to that specific team mean.
     home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
     away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
 
-    df_player_attr_mean['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
-    df_player_attr_mean['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
-    df_player_attr_mean['home_player_attr_mean'].fillna(0, inplace=True)
-    df_player_attr_mean['away_player_attr_mean'].fillna(0, inplace=True)
+    HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
+    HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
 
-    return df_player_attr_mean
+    return HomeAndAwayTeam_player_attr_mean_df
 
 
 def addTeamNames(new_df, data_team):
