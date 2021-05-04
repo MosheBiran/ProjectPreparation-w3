@@ -1,5 +1,6 @@
 import dataInit
 import KNearestNeighbors
+import SupportVectorMachine
 
 import GaussianNaiveBayes
 if __name__ == '__main__':
@@ -9,5 +10,8 @@ if __name__ == '__main__':
     # GaussianNaiveBayes.naive_bayes_function(trainData, testData)
 
     # K - Nearest Neighbors Model:
-    KNearestNeighbors.model_KNN(trainData, testData)
+    #KNearestNeighbors.model_KNN(trainData, testData)
+
+    #SVM
+    SupportVectorMachine.model_SVM(trainData, testData)
 
