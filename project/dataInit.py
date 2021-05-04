@@ -205,6 +205,27 @@ def dataframe_mean_goals(data_df):
 
     return data_df
 
+def dataframe_other_team_goals(data_df):
+
+    data_home_df = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
+    data_away_df = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
+
+    data_df = pd.merge(data_df, data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
+    data_df = pd.merge(data_df, data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
+
+    # data_df['goals_mean'] = np.floor(data_df['home_team_goal_y'] / data_df['away_team_goal_y'])
+    # del data_df['home_team_goal_y']
+    # del data_df['away_team_goal_y']
+
+    data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
+    data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
+
+    data_df.rename(columns={'home_team_goal_y': 'home_other_season_team_goal'}, inplace=True)
+    data_df.rename(columns={'away_team_goal_y': 'away_other_season_team_goal'}, inplace=True)
+    return data_df
+
+
+
 
 
 def addTeamNames(new_df, data_team):
@@ -478,6 +499,8 @@ def init():
     matchWithTeamAttributes_df = dataframe_mean_goals(matchWithTeamAttributes_df)
 
     matchWithTeamAttributes_df = dataframe_attributeTeam_ratio(matchWithTeamAttributes_df)
+
+    matchWithTeamAttributes_df = dataframe_other_team_goals(matchWithTeamAttributes_df)
 
     # Calculate Where The Team Playing Better
     trainData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]

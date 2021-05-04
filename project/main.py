@@ -10,7 +10,7 @@ if __name__ == '__main__':
     trainData, testData = dataInit.init()
     #dataAnalyze.check_data(trainData)
     # AdaBoost Classifier Model:
-    #AdaBoost.runAdaBoost(trainData,testData)
+    AdaBoost.runAdaBoost(trainData,testData)
 
 
     # GaussianNaiveBayes.naive_bayes_function(trainData, testData)
@@ -22,5 +22,5 @@ if __name__ == '__main__':
     #KNearestNeighbors.model_KNN(trainData, testData)
 
     #SVM
-    SupportVectorMachine.model_SVM(trainData, testData)
+    #SupportVectorMachine.model_SVM(trainData, testData)
 
