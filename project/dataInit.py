@@ -94,8 +94,8 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
 
 
 def dataframe_filter_players(data_match_players_df, player_attr_df):
-    # Clearing the date from day and month
 
+    # Clearing the date from day and month
     data_match_players_df['date'] = data_match_players_df['date'].str.slice(stop=4)
     player_attr_df['date'] = player_attr_df['date'].str.slice(stop=4)
 
@@ -103,16 +103,13 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
 
     player_attr_df = player_attr_df.sort_values(by=['player_api_id', 'date'])
 
-    df = data_match_players_df[['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
-
-    i = 0
+    df_player_attr_mean = data_match_players_df[['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
 
     for col in data_match_players_df.columns:
         if "_player_" in col:
-            suffix = ("_home_" + str(i), "_home_" + str(i + 1))
-            i += 1
+            suffix = ("_home_", "_home_")
             if "away_" in col:
-                suffix = ("_away_" + str(i), "_away_" + str(i + 1))
+                suffix = ("_away_", "_away_")
             data_match_players_df = pd.merge(data_match_players_df, player_attr_df, how='left', left_on=['date', col], right_on=['date', 'player_api_id'], suffixes=suffix)
             del data_match_players_df[col]
 
@@ -121,48 +118,12 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
     away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
 
-    df['mean_home'] = data_match_players_df[home_col_mean_lst].mean(1)
-    df['mean_away'] = data_match_players_df[away_col_mean_lst].mean(1)
-    df['mean_home'].fillna(0, inplace=True)
-    df['mean_away'].fillna(0, inplace=True)
+    df_player_attr_mean['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
+    df_player_attr_mean['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
+    df_player_attr_mean['home_player_attr_mean'].fillna(0, inplace=True)
+    df_player_attr_mean['away_player_attr_mean'].fillna(0, inplace=True)
 
-    # player_list = data_player_attr_df.index.values
-    # id =[]
-    # years = []
-    # for val in player_list:
-    #     id.append(val[0])
-    #     years.append(val[1])
-    # data_player_attr_df['date'] = years
-    # data_player_attr_df['player_api_id'] = id
-    # data_player_attr_df['rating'] = data_player_attr_df['overall_rating']
-    # del data_player_attr_df['overall_rating']
-    # data_player_attr_df.columns.name = ''
-    #
-    # data_match_players_df['sum'] = 0
-    # data_match_players_df['count'] = 0
-
-    # data_match_players_df = data_match_players_df.dropna()
-    # new_df_outer = pd.merge(data_match_players_df, data_player_attr_df, how='inner', left_on=['date', 'home_player_1'],
-    #                         right_on=['date', 'player_api_id'])
-    # data_match_players_df['sum'] = data_match_players_df['sum'] + data_match_players_df['overall_rating']
-    # for i in range(1, 12):
-    #     new_df_outer = pd.merge(data_match_players_df, data_player_attr_df, how='inner',
-    #                             left_on=['date', 'home_player_' + str(i)],
-    #                             right_on=['date', 'team_api_id'])
-    #
-    # for index_match, row in data_match_players_df.iterrows():
-    #     for index, rating in data_player_attr_df.iterrows():
-    #         if row['date'] == index[1]:
-    #             for i in range(1, 12):
-    #                 if row['home_player_' + str(i)] == index[0]:
-    #                     row['sum'] += rating['overall_rating']
-    #                     row['count'] += 1
-    #             for i in range(1, 12):
-    #                 if row['away_player_' + str(i)] == index[0]:
-    #                     row['sum'] += rating['overall_rating']
-    #                     row['count'] += 1
-
-    return df
+    return df_player_attr_mean
 
 
 def addTeamNames(new_df, data_team):
@@ -409,6 +370,8 @@ def init():
 
     # Adding The Names Of The Teams
     dataWithTeamNames = addTeamNames(matchWithTeamAttributes_df, teams_Data_DF)
+
+    dataWithTeamNames = pd.merge(dataWithTeamNames, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
 
     # Calculate Where The Team Playing Better
     trainData_before_WB = dataWithTeamNames.loc[

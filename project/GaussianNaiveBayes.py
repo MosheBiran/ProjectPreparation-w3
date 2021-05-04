@@ -15,7 +15,7 @@ def DataFrame_Info_String2Numeric(data):
 
 
 def split_DataFrame_2_TrainAndTest(data):
-    X_ = data.drop(["home_team_long_name", "away_team_long_name", "HomeTeamResult"], axis=1)
+    X_ = data.drop(["home_team_long_name", "away_team_long_name", "HomeTeamResult", "home_team_goal_bin", "away_team_goal_bin"], axis=1)
     y_ = data["HomeTeamResult"]
     return X_, y_
 
