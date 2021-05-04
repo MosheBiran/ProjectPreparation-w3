@@ -31,4 +31,4 @@ def model_SVM(trainData, testData):
     print("Training data accuracy is", str(accuracy_score(y_test, prediction)), "%")
     print("\n**************************\n")
 
-# from the matzeget of the hartzaa
+#from the matzeget of the hartzaa

@@ -327,8 +327,8 @@ def clearUnusedFeatures(new_df):
     :param new_df: The Dataframe that we need to clear
     :return: The Dataframe after clean
     """
-    # del new_df["home_team_goal"]
-    # del new_df["away_team_goal"]
+    del new_df["home_team_goal"]
+    del new_df["away_team_goal"]
     del new_df["season"]
     del new_df["date"]
     del new_df["home_team_api_id"]
