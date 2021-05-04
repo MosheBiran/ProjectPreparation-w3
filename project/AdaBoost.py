@@ -1,32 +1,35 @@
-import random
+import pip
+import shap
+import matplotlib.pyplot as plt
 from sklearn.ensemble import AdaBoostClassifier
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold,GridSearchCV
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+
 """
 where we took AdaBoost from:
 https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClassifier.html
 """
 
-# dictionary to help us select uniformly values
-# that are normalized to team id
-dic_of_team_id = {}
+# path = "C:\\Users\\liadn\\Downloads\\"
 
-path = "C:\\Users\\liadn\\Downloads\\"
 # main function to run AdaBoost algorithm
 def runAdaBoost(trainData, test_15_16):
+    trainData = trainData.drop(['home_buildUpPlaySpeedClass', 'home_buildUpPlayDribblingClass',
+                    'home_buildUpPlayPassingClass', 'home_buildUpPlayPositioningClass',
+                    'home_defencePressureClass', 'home_defenceAggressionClass',
+                    'away_buildUpPlaySpeedClass', 'away_buildUpPlayDribblingClass',
+                    'away_buildUpPlayPassingClass', 'away_buildUpPlayPositioningClass',
+                    'away_defencePressureClass', 'away_defenceAggressionClass'], axis=1)
 
-    # remove columns that are duplicated
-    trainData = trainData.loc[:, ~trainData.columns.duplicated()]
-    test_15_16 = test_15_16.loc[:, ~test_15_16.columns.duplicated()]
+    test_15_16 = test_15_16.drop(['home_buildUpPlaySpeedClass', 'home_buildUpPlayDribblingClass',
+                    'home_buildUpPlayPassingClass', 'home_buildUpPlayPositioningClass',
+                    'home_defencePressureClass', 'home_defenceAggressionClass',
+                    'away_buildUpPlaySpeedClass', 'away_buildUpPlayDribblingClass',
+                    'away_buildUpPlayPassingClass', 'away_buildUpPlayPositioningClass',
+                    'away_defencePressureClass', 'away_defenceAggressionClass'], axis=1)
 
-    # make our data applicable to the algorithm
-    convertFeaturesToNumeric(trainData)
-    convertFeaturesToNumeric(test_15_16)
-
-    # helps us see rows that are
-    # the same as others
-    x1 = trainData.groupby(trainData.columns.tolist(), as_index=False).size()
 
     # split trainData to features
     # and classification
@@ -38,34 +41,47 @@ def runAdaBoost(trainData, test_15_16):
     test_data = test_15_16.iloc[:, :-1].values
     test_label = test_15_16.iloc[:, len(test_15_16.columns) - 1].values
 
-    # define Ada hyper params
-    clf = AdaBoostClassifier(n_estimators=100, random_state=0)
-
-
     X = data
     y = label
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
+
+    n_trees = [100]
+    k_fold = [i for i in range(2,50)]
+    for n in n_trees:
+        for k in k_fold:
+            print(k)
+            clf = AdaBoostClassifier(n_estimators=n, random_state=0)
+            # calcBestNumOfFolds(clf, X, y, 32, test_data, test_label)
+            calcBestNumOfFolds(clf, X, y, 32, test_data, test_label,trainData)
 
 
-    # start train model
-    clf.fit(X_train, y_train)
+#######################################
+    # calcBestNumOfFolds(clf,X,y,5,test_data,test_label)
+#######################################
 
-
-    # prediction of trained model
-    y_pred = clf.predict(X_test)
-
-    # calculate loss function
-    loss = my_custom_loss_func(y_test, y_pred)
-
-    # calculate confusion matrix
-    arr = confusion_matrix(y_test, y_pred)
-    print(arr)
-    print("**********")
-
-    # calculate model accuracy
-    acc = accuracy_score(y_test, y_pred)
-    print(acc)
+    # # start train model
+    # clf.fit(X_train, y_train)
+    #
+    # # prediction of trained model
+    # y_pred = clf.predict(X_test)
+    #
+    # # prediction of trained model - *test*
+    # y_pred_test = clf.predict(test_data)
+    #
+    # # calculate loss function
+    # loss = my_custom_loss_func(y_test, y_pred)
+    #
+    # # calculate confusion matrix
+    # arr = confusion_matrix(y_test, y_pred)
+    # print(arr)
+    # print("*****RUN ON 12_13_14*****")
+    # # calculate model accuracy
+    # acc = accuracy_score(y_test, y_pred)
+    # print(acc)
+    # print("*****RUN ON 15_16*****")
+    # # calculate model accuracy
+    # acc_test = accuracy_score(test_label, y_pred_test)
+    # print(acc_test)
 
 
 
@@ -73,52 +89,40 @@ def my_custom_loss_func(y_true, y_pred):
     diff = np.abs(y_true - y_pred).max()
     return np.log1p(diff)
 
-def convertFeaturesToNumeric(dataToConvert):
-    for col in dataToConvert:
-        if col == "home_team_api_id":
-            dataToConvert[col] = dataToConvert[col].apply(changeTeamID)
-            continue
-        if col == "away_team_api_id":
-            dataToConvert[col] = dataToConvert[col].apply(changeTeamID)
-            continue
-        dataToConvert[col] = dataToConvert[col].apply(helpFuncForConvert)
-    return dataToConvert
 
-# created to help with converting not numeric values
-# to numeric
-def helpFuncForConvert(x):
-    speedClass = ["Slow", "Balanced", "Fast"]
-    dribblingClass = ["Little", "Normal", "Lots"]
-    passingClass = ["Short", "Mixed", "Long"]
-    positioningClass = ["Organised", "Free Form"]
-    pressureClass = ["Medium", "Deep", "High"]
-    aggressionClass = ["Press", "Double", "Contain"]
-    goalClass = ["0", "1", "2", "3+"]
-    whereBetterClass = ["Home", "Away", "NeverMind"]
-    resultClass = ["Win", "Lose", "Draw"]
+# function that iterates over params and check which is the best
+def calcBestNumOfFolds(clf,X,y,n,test_data,test_label,trainData):
+    # var to save max for 2015_2016
+    max_acc = 0
 
-    if x in speedClass:
-        return speedClass.index(x)
-    elif x in dribblingClass:
-        return dribblingClass.index(x)
-    elif x in passingClass:
-        return passingClass.index(x)
-    elif x in positioningClass:
-        return positioningClass.index(x)
-    elif x in pressureClass:
-        return pressureClass.index(x)
-    elif x in aggressionClass:
-        return aggressionClass.index(x)
-    elif x in goalClass:
-        return goalClass.index(x)
-    elif x in whereBetterClass:
-        return whereBetterClass.index(x)
-    elif x in resultClass:
-        return resultClass.index(x)
 
-# in order to have un-biased values of team id
-# we have uniformly distributed values of team id
-def changeTeamID(x):
-    if str(x) not in dic_of_team_id:
-        dic_of_team_id[str(x)] = random.uniform(0, 3)
-    return dic_of_team_id[str(x)]
+    # for i in range(2,n):
+        # max acc variable
+    kf = KFold(n_splits=n, random_state=None, shuffle=False)
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        # start train model
+        clf.fit(X_train, y_train)
+
+        importances = clf.feature_importances_
+        indices = np.argsort(importances)
+        features = trainData.columns
+        plt.title('Feature Importances')
+        plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+        plt.yticks(range(len(indices)), [features[i] for i in indices])
+        plt.xlabel('Relative Importance')
+        plt.show()
+
+        y_pred_test = clf.predict(test_data)
+        acc_test = accuracy_score(test_label, y_pred_test)
+        # found max split
+        if acc_test > max_acc:
+            max_acc = acc_test
+            X_train_max, X_test_max = X[train_index], X[test_index]
+            y_train_max, y_test_max = y[train_index], y[test_index]
+
+    print(max_acc)
+
+
+    # return X_train_max_for_tests, X_test_max_for_tests,y_train_max_for_tests, y_test_max_for_tests

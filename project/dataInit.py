@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 
 from sklearn import preprocessing
 
-path = "C:\\Users\\Daniel\\Downloads\\archive\\"
+path = "C:\\Users\\liadn\\Downloads\\"
 
 
 def create_connection(db_file):
@@ -126,8 +126,10 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
     away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
 
-    HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
-    HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
+    HomeAndAwayTeam_player_attr_mean_df['player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/data_match_players_df[away_col_mean_lst].mean(1)
+
+    # HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
+    # HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
 
     return HomeAndAwayTeam_player_attr_mean_df
 
