@@ -1,10 +1,9 @@
-import dataInit
-import KNearestNeighbors
-import SupportVectorMachine
-from project import AdaBoost, KNearestNeighbors,dataInit
+from project import AdaBoost, KNearestNeighbors, dataInit, SupportVectorMachine, dataAnalyze
 
 if __name__ == '__main__':
     trainData, testData = dataInit.init()
+    # dataAnalyze.check_data(trainData)
+
     # AdaBoost Classifier Model:
     AdaBoost.runAdaBoost(trainData,testData)
 

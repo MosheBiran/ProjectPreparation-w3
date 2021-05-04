@@ -77,7 +77,7 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
     :param data_match_df: The Data about the matches
     :param data_team_attr_df: The Data about the team and there attributes
     :return: The Data merged with the matches and the attributes of the teams in the match - With Null
-    """    # Clearing the date from day and month
+    """  # Clearing the date from day and month
     data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
     data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
 
@@ -107,27 +107,61 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     data_match_players_df['date'] = data_match_players_df['date'].str.slice(stop=4)
     player_attr_df['date'] = player_attr_df['date'].str.slice(stop=4)
 
-    player_attr_df = player_attr_df.groupby(['player_api_id', 'date'], as_index=False)['overall_rating'].mean()
+    # player_attr_df = player_attr_df.groupby(['player_api_id', 'date'], as_index=False)['overall_rating'].mean()
+    player_attr_df = player_attr_df.groupby(['player_api_id', 'date'], as_index=False).mean(
+        ['overall_rating', 'potential', 'free_kick_accuracy', 'gk_kicking', 'shot_power'])
 
-    HomeAndAwayTeam_player_attr_mean_df = data_match_players_df[['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
+    HomeAndAwayTeam_player_attr_mean_df = data_match_players_df[
+        ['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
 
     for col in data_match_players_df.columns:
         if "_player_" in col:
             suffix = ("_home_", "_home_")
             if "away_" in col:
                 suffix = ("_away_", "_away_")
-            data_match_players_df = pd.merge(data_match_players_df, player_attr_df, how='left', left_on=['date', col], right_on=['date', 'player_api_id'], suffixes=suffix)
+            data_match_players_df = pd.merge(data_match_players_df, player_attr_df, how='left', left_on=['date', col],
+                                             right_on=['date', 'player_api_id'], suffixes=suffix)
             del data_match_players_df[col]
 
     # removing all columns that are not relevant.
-    data_match_players_df = data_match_players_df.drop([col for col in data_match_players_df.columns if 'player_api_id' in col], axis=1)
+    data_match_players_df = data_match_players_df.drop(
+        [col for col in data_match_players_df.columns if 'player_api_id' in col], axis=1)
 
     # Creating a list of all columns that relevant to that specific team mean.
     home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
     away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
+    HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(
+        1) / 100
+    HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(
+        1) / 100
 
-    HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
-    HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
+    home_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_home_' in col]
+    away_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_away_' in col]
+    HomeAndAwayTeam_player_attr_mean_df['home_player_pot_mean'] = data_match_players_df[home_col_mean_lst].mean(
+        1) / 100
+    HomeAndAwayTeam_player_attr_mean_df['away_player_pot_mean'] = data_match_players_df[away_col_mean_lst].mean(
+        1) / 100
+
+    home_col_mean_lst = [col for col in data_match_players_df.columns if 'free_kick_accuracy_home_' in col]
+    away_col_mean_lst = [col for col in data_match_players_df.columns if 'free_kick_accuracy_away_' in col]
+    HomeAndAwayTeam_player_attr_mean_df['home_player_free_kick_mean'] = data_match_players_df[home_col_mean_lst].mean(
+        1) / 100
+    HomeAndAwayTeam_player_attr_mean_df['away_player_free_kick_mean'] = data_match_players_df[away_col_mean_lst].mean(
+        1) / 100
+
+    # home_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_home_' in col]
+    # away_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_away_' in col]
+    # HomeAndAwayTeam_player_attr_mean_df['home_player_gk_kicking_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #     1) / 100
+    # HomeAndAwayTeam_player_attr_mean_df['away_player_gk_kicking_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #     1) / 100
+
+    home_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_home_' in col]
+    away_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_away_' in col]
+    HomeAndAwayTeam_player_attr_mean_df['home_player_shot_power_mean'] = data_match_players_df[home_col_mean_lst].mean(
+        1) / 100
+    HomeAndAwayTeam_player_attr_mean_df['away_player_shot_power_mean'] = data_match_players_df[away_col_mean_lst].mean(
+        1) / 100
 
     return HomeAndAwayTeam_player_attr_mean_df
 
@@ -136,15 +170,18 @@ def dataframe_mean_goals(data_df):
     data_home_df = data_df.groupby(['home_team_api_id'], as_index=False)['home_team_goal'].mean()
     data_away_df = data_df.groupby(['away_team_api_id'], as_index=False)['away_team_goal'].mean()
 
-    home_away_goals = pd.merge(data_home_df, data_away_df, how='outer', left_on=['home_team_api_id'], right_on=['away_team_api_id'])
-    home_away_goals['goal'] = home_away_goals[['home_team_goal','away_team_goal']].mean(1)
+    home_away_goals = pd.merge(data_home_df, data_away_df, how='outer', left_on=['home_team_api_id'],
+                               right_on=['away_team_api_id'])
+    home_away_goals['goal'] = home_away_goals[['home_team_goal', 'away_team_goal']].mean(1)
     del home_away_goals['away_team_api_id']
     del home_away_goals['home_team_goal']
     del home_away_goals['away_team_goal']
 
-    data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['home_team_api_id'], right_on=['home_team_api_id'])
-    data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['away_team_api_id'], right_on=['home_team_api_id'])
-    data_df['goals_mean'] = data_df['goal_x']/data_df['goal_y']
+    data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['home_team_api_id'],
+                       right_on=['home_team_api_id'])
+    data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['away_team_api_id'],
+                       right_on=['home_team_api_id'])
+    data_df['goals_mean'] = data_df['goal_x'] / data_df['goal_y']
 
     data_df.rename(columns={'home_team_api_id_x': 'home_team_api_id'}, inplace=True)
 
@@ -153,7 +190,6 @@ def dataframe_mean_goals(data_df):
     del data_df['home_team_api_id_y']
 
     return data_df
-
 
 
 def addTeamNames(new_df, data_team):
@@ -210,8 +246,11 @@ def sqlQuery(conn):
 
     data_Team = pd.read_sql_query('SELECT team_api_id, team_long_name from Team', conn)
 
+    # data_Players_AttrDF = pd.read_sql_query(
+    #     'SELECT player_api_id,date,overall_rating from Player_Attributes',
+    #     conn)
     data_Players_AttrDF = pd.read_sql_query(
-        'SELECT player_api_id,date,overall_rating from Player_Attributes',
+        'SELECT player_api_id,date,overall_rating,potential,free_kick_accuracy,gk_kicking,shot_power from Player_Attributes',
         conn)
 
     data_matchDF_players = pd.read_sql_query(
@@ -291,7 +330,7 @@ def addingResultFeature(new_df):
     conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
                   new_df["home_team_goal"] < new_df["away_team_goal"],
                   new_df["home_team_goal"] == new_df["away_team_goal"]]
-    #TODO : REMEBER CHOICES WAS [2,0,1]
+    # TODO : REMEBER CHOICES WAS [2,0,1]
     choices = [2, 0, 1]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
     new_df["result"] = new_df["result"].astype(int)
@@ -384,8 +423,6 @@ def DataFrame_Info_String2Numeric(data):
     return data
 
 
-
-
 def init():
     """
     The Init And Building The Data From The Model Training And Testing
@@ -409,12 +446,14 @@ def init():
     # Adding Label Result To The Data
     matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
 
-
-    matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
+    matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner',
+                                          left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'],
+                                          right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
     matchWithTeamAttributes_df = dataframe_mean_goals(matchWithTeamAttributes_df)
 
     # Calculate Where The Team Playing Better
-    trainData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    trainData_before_WB = matchWithTeamAttributes_df.loc[
+        (matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
     testData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2015/2016"]))]
 
     # Merging WhereBetter With Main Data
