@@ -1,18 +1,18 @@
 import sqlite3
 from aifc import Error
-from functools import reduce
 
 import numpy as np
 import pandas as pd
-from matplotlib.pyplot import show
+
 from scipy.interpolate import rbf
 from sklearn.model_selection import train_test_split
 from sklearn import svm
+from functools import reduce
+import xml.etree.ElementTree as ET
 
-from project import preprocessing
+from sklearn import preprocessing
 
-path = "C:\\Users\\liadn\\Downloads\\"
-
+path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
 
 def create_connection(db_file):
@@ -77,8 +77,7 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
     :param data_match_df: The Data about the matches
     :param data_team_attr_df: The Data about the team and there attributes
     :return: The Data merged with the matches and the attributes of the teams in the match - With Null
-    """
-    # Clearing the date from day and month
+    """    # Clearing the date from day and month
     data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
     data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
 
@@ -95,6 +94,42 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
     new_df_outer = new_df_outer.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
 
     return new_df_outer
+
+
+def dataframe_filter_players(data_match_players_df, player_attr_df):
+    """
+    :param data_match_players_df:Another frame containing player ID and that player attributes
+    :param player_attr_df:data frame containing all  matches between 2 teams include  the season and date they play against each other
+    :return:a new data frame that contains the team numbers along with the player average attributes in that season .
+    """
+
+    # Clearing the date from day and month
+    data_match_players_df['date'] = data_match_players_df['date'].str.slice(stop=4)
+    player_attr_df['date'] = player_attr_df['date'].str.slice(stop=4)
+
+    player_attr_df = player_attr_df.groupby(['player_api_id', 'date'], as_index=False)['overall_rating'].mean()
+
+    HomeAndAwayTeam_player_attr_mean_df = data_match_players_df[['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
+
+    for col in data_match_players_df.columns:
+        if "_player_" in col:
+            suffix = ("_home_", "_home_")
+            if "away_" in col:
+                suffix = ("_away_", "_away_")
+            data_match_players_df = pd.merge(data_match_players_df, player_attr_df, how='left', left_on=['date', col], right_on=['date', 'player_api_id'], suffixes=suffix)
+            del data_match_players_df[col]
+
+    # removing all columns that are not relevant.
+    data_match_players_df = data_match_players_df.drop([col for col in data_match_players_df.columns if 'player_api_id' in col], axis=1)
+
+    # Creating a list of all columns that relevant to that specific team mean.
+    home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
+    away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
+
+    HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
+    HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
+
+    return HomeAndAwayTeam_player_attr_mean_df
 
 
 def addTeamNames(new_df, data_team):
@@ -135,7 +170,6 @@ def remove_x_y(new_df_with_name):
     return new_df_with_name
 
 
-
 def sqlQuery(conn):
     """
     The SQL Queries For Getting The Data From The SQL Database
@@ -152,7 +186,18 @@ def sqlQuery(conn):
 
     data_Team = pd.read_sql_query('SELECT team_api_id, team_long_name from Team', conn)
 
-    return data_matchDF, data_Team_AttrDF, data_Team
+    data_Players_AttrDF = pd.read_sql_query(
+        'SELECT player_api_id,date,overall_rating from Player_Attributes',
+        conn)
+
+    data_matchDF_players = pd.read_sql_query(
+        'SELECT home_team_api_id,away_team_api_id,season,date, home_player_1, home_player_2, home_player_3, '
+        'home_player_4, home_player_5, home_player_6, home_player_7, home_player_8, '
+        'home_player_9, home_player_10, home_player_11 , away_player_1, away_player_2, away_player_3, away_player_4, '
+        'away_player_5, away_player_6, away_player_7, away_player_8, away_player_9, away_player_10, away_player_11 '
+        'from '
+        'Match', conn)
+    return data_matchDF, data_Team_AttrDF, data_Team, data_Players_AttrDF, data_matchDF_players
 
 
 def getWhereBetterHomeOrAway(new_df_with_name):
@@ -166,11 +211,11 @@ def getWhereBetterHomeOrAway(new_df_with_name):
     """
     df_home_team_win_sum = new_df_with_name.groupby(["home_team_api_id", "result"]).size().reset_index(
         name="wins_home_sum")
-    df_home_team_win_sum = df_home_team_win_sum.loc[(df_home_team_win_sum['result'] == 1)]
+    df_home_team_win_sum = df_home_team_win_sum.loc[(df_home_team_win_sum['result'] == 2)]
 
     df_away_team_win_sum = new_df_with_name.groupby(["away_team_api_id", "result"]).size().reset_index(
         name="wins_away_sum")
-    df_away_team_win_sum = df_away_team_win_sum.loc[(df_away_team_win_sum['result'] == -1)]
+    df_away_team_win_sum = df_away_team_win_sum.loc[(df_away_team_win_sum['result'] == 0)]
 
     df_home_team_total_count = new_df_with_name.groupby(["home_team_api_id"]).result.count().reset_index(
         name="home_count")
@@ -212,9 +257,9 @@ def addingResultFeature(new_df):
     """
     Add Result Label For Each Game - According To The Home Team
     "Home Team Goals" - "Away Team Goals"
-     1 = Win
-     0 = Draw
-    -1 = Lose
+     2 = Win
+     1 = Draw
+     0 = Lose
     :param new_df: The Dataframe to Add The Label
     :return:The Data After Adding The Label "Result"
     """
@@ -223,7 +268,7 @@ def addingResultFeature(new_df):
                   new_df["home_team_goal"] < new_df["away_team_goal"],
                   new_df["home_team_goal"] == new_df["away_team_goal"]]
 
-    choices = [1, -1, 0]
+    choices = [2, 0, 1]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
     new_df["result"] = new_df["result"].astype(int)
 
@@ -232,14 +277,14 @@ def addingResultFeature(new_df):
 
 def resultToCategorical(new_df):
     """
-    Converting the result feature from int to categorical [1, 0, -1] -> ["Win", "Draw", "Lose"]
+    Converting the result feature from int to categorical [2, 1, 0] -> ["Win", "Draw", "Lose"]
     :param new_df: The Dataframe that needed to convert
     :return: The Dataframe after the convert
     """
     # Adding a column of binary representation win loss and draw.
-    conditions = [new_df["result"] == 1,
-                  new_df["result"] == 0,
-                  new_df["result"] == -1]
+    conditions = [new_df["result"] == 2,
+                  new_df["result"] == 1,
+                  new_df["result"] == 0]
 
     choices = ["Win", "Draw", "Lose"]
     new_df["result"] = np.select(conditions, choices, default=np.nan)
@@ -261,12 +306,15 @@ def clearUnusedFeatures(new_df):
     del new_df["away_team_goal"]
     del new_df["season"]
     del new_df["date"]
-    # del new_df["home_team_api_id"]
-    # del new_df["away_team_api_id"]
+    del new_df["home_team_api_id"]
+    del new_df["away_team_api_id"]
     del new_df["home_percentHome"]
     del new_df["home_percentAway"]
     del new_df["away_percentHome"]
     del new_df["away_percentAway"]
+
+    new_df["Result"] = new_df["result"]
+    del new_df["result"]
 
     return new_df
 
@@ -303,6 +351,17 @@ def margeWhereBetterWithMainData(df_2012_2013_2014_before, df_15_16_before):
     return df_2012_2013_2014, df_15_16
 
 
+def DataFrame_Info_String2Numeric(data):
+    le = preprocessing.LabelEncoder()
+    for col in data.columns:
+        if isinstance(data[col][0], str) and "name" not in col:
+            # turn a string label into a number
+            data[col] = le.fit_transform(data[col])
+    return data
+
+
+
+
 def init():
     """
     The Init And Building The Data From The Model Training And Testing
@@ -315,36 +374,79 @@ def init():
     cursor = conn.cursor()
 
     # create DF
-    match_Data_DF, team_Attr_Data_DF, teams_Data_DF = sqlQuery(conn)
+    match_Data_DF, team_Attr_Data_DF, teams_Data_DF, data_Players_AttrDF, data_matchDF_players = sqlQuery(conn)
 
     teams_Data_DF = teams_Data_DF.sort_values(by=['team_api_id'])
+
+    Players_Attr_avg = dataframe_filter_players(data_matchDF_players, data_Players_AttrDF)
 
     matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
 
     # Adding Label Result To The Data
     matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
 
-    # Binning - The Number Of Goals
-    matchWithTeamAttributes_df = dataWithTeamNames = preprocessing.binGoals(matchWithTeamAttributes_df)
 
-    # Adding The Names Of The Teams
-    # dataWithTeamNames = addTeamNames(matchWithTeamAttributes_df, teams_Data_DF)
+    matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
 
     # Calculate Where The Team Playing Better
-    trainData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
-    testData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2015/2016"]))]
+    trainData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+    testData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2015/2016"]))]
 
     # Merging WhereBetter With Main Data
     trainData, testData = margeWhereBetterWithMainData(trainData_before_WB, testData_before_WB)
 
-    # Convert Class Result To Categorical
-    trainData = resultToCategorical(trainData)
-    testData = resultToCategorical(testData)
+    #################################################################################################################################
+    # # Convert Class Result To Categorical  # TODO: Not Need For Categorical
+    # trainData = resultToCategorical(trainData)
+    # testData = resultToCategorical(testData)
+    #################################################################################################################################
 
     trainData = clearUnusedFeatures(trainData)
     testData = clearUnusedFeatures(testData)
+
+    trainData = DataFrame_Info_String2Numeric(trainData.copy())
+    testData = DataFrame_Info_String2Numeric(testData.copy())
 
     cursor.close()
     conn.close()
 
     return trainData, testData
+
+
+def temp():
+    database = path + "database.sqlite"
+
+    # create a database connection
+    conn = create_connection(database)
+    cursor = conn.cursor()
+
+    data_matchDF = pd.read_sql_query(
+        'SELECT home_team_api_id,away_team_api_id, shoton from Match', conn)
+
+    print(data_matchDF.apply(lambda x: sum(x.isnull()), axis=0))
+
+    for x in data_matchDF['shoton']:
+        if x is None:
+            continue
+        root = ET.XML(x)  # Parse XML
+
+        data = []
+        cols = []
+        flag = 0
+        for i, child in enumerate(root.iter()):
+            print(child.tag)
+            if child.tag == 'shoton':
+                flag += 1
+
+            if flag <= 1:
+                cols.append(child.tag)
+
+            for subchild in child:
+                data.append(subchild.text)
+
+        df = pd.DataFrame(data).T  # Write in DF and transpose it
+        df.columns = cols  # Update column names
+        print(df)
+
+    cursor.close()
+    conn.close()
