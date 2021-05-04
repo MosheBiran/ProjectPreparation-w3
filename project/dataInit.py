@@ -385,20 +385,12 @@ def init():
     # Adding Label Result To The Data
     matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
 
-    # Binning - The Number Of Goals
-    matchWithTeamAttributes_df = preprocessing.binGoals(matchWithTeamAttributes_df)
 
-    # Adding The Names Of The Teams
-    dataWithTeamNames = addTeamNames(matchWithTeamAttributes_df, teams_Data_DF)
-
-    dataWithTeamNames = pd.merge(dataWithTeamNames, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
+    matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
 
     # Calculate Where The Team Playing Better
     trainData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
     testData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2015/2016"]))]
-    trainData_before_WB = dataWithTeamNames.loc[
-        (dataWithTeamNames['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
-    testData_before_WB = dataWithTeamNames.loc[(dataWithTeamNames['season'].isin(["2015/2016"]))]
 
     # Merging WhereBetter With Main Data
     trainData, testData = margeWhereBetterWithMainData(trainData_before_WB, testData_before_WB)
