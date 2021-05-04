@@ -367,6 +367,9 @@ def init():
     The Init And Building The Data From The Model Training And Testing
     :return: The Train Data , Test Data
     """
+
+    """--------------------------------- SQL Connection And Queries ------------------------------------"""
+
     database = path + "database.sqlite"
 
     # create a database connection
@@ -376,15 +379,19 @@ def init():
     # create DF
     match_Data_DF, team_Attr_Data_DF, teams_Data_DF, data_Players_AttrDF, data_matchDF_players = sqlQuery(conn)
 
-    teams_Data_DF = teams_Data_DF.sort_values(by=['team_api_id'])
+
+    """--------------------------------- Merging All The DataFrames Into One ------------------------------------"""
+
 
     Players_Attr_avg = dataframe_filter_players(data_matchDF_players, data_Players_AttrDF)
 
     matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
 
+    """--------------------------------- Adding New Features ------------------------------------"""
+
+
     # Adding Label Result To The Data
     matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
-
 
     matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
 
@@ -401,6 +408,10 @@ def init():
     # testData = resultToCategorical(testData)
     #################################################################################################################################
 
+
+    """--------------------------------- Clearing The UnNeeded Features And Converting To Numeric ------------------------------------"""
+
+
     trainData = clearUnusedFeatures(trainData)
     testData = clearUnusedFeatures(testData)
 
@@ -411,6 +422,7 @@ def init():
     conn.close()
 
     return trainData, testData
+
 
 
 def temp():
