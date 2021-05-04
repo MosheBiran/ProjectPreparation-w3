@@ -1,23 +1,48 @@
-import random
-
+import numpy as np
+from matplotlib import pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
+
+
+
+# importing the metrics module - For GridCV
+from sklearn import metrics
 
 # https://scikit-learn.org/stable/modules/generated/sklearn.neighbors.KNeighborsClassifier.html
 
-dic_of_team_id = {}
 
 
 def model_KNN(trainData, testData):
+
+    """--------------------------------- Splitting The Train Data ------------------------------------"""
+
 
     X = trainData.iloc[:, :-1].values
     y = trainData.iloc[:, len(trainData.columns) - 1].values
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
 
-    classifier = KNeighborsClassifier(n_neighbors=5)
+
+    """--------------------------------- Feature Scaling ------------------------------------"""
+
+    scaler = StandardScaler()
+    scaler.fit(X_train)
+
+    X_train = scaler.transform(X_train)
+    X_test = scaler.transform(X_test)
+
+
+    """--------------------------------- Train Of The Model ------------------------------------"""
+
+
+    classifier = KNeighborsClassifier(n_neighbors=21)
     classifier.fit(X_train, y_train)
+
+
+    """--------------------------------- Prediction And Evaluation------------------------------------"""
 
     y_predict = classifier.predict(X_test)
 
@@ -28,65 +53,125 @@ def model_KNN(trainData, testData):
     print("\n**************************\n")
 
 
+    """--------------------------------- Splitting The Test Data ------------------------------------"""
+
 
     season_15_16_features = testData.iloc[:, :-1].values
     season_15_16_Result = testData.iloc[:, len(testData.columns) - 1].values
 
-    predict_15_16 = classifier.predict(season_15_16_features)
+
+    """--------------------------------- Feature Scaling ------------------------------------"""
+
+    scaler = StandardScaler()
+    scaler.fit(season_15_16_features)
+
+    season_15_16_features = scaler.transform(season_15_16_features)
+
+
+    """--------------------------------- Prediction And Evaluation Of 2015/2016 ------------------------------------"""
+
+
+    prediction_on_15_16 = classifier.predict(season_15_16_features)
 
     print("\n**************************\n")
-    print("Seasons 2015/2016 data accuracy is", str(accuracy_score(season_15_16_Result, predict_15_16)), "%")
+    print("Seasons 2015/2016 data accuracy is", str(accuracy_score(season_15_16_Result, prediction_on_15_16)), "%")
     print("\n**************************\n")
 
 
+    """--------------------------------- Check Err KNN ------------------------------------"""
 
-def convertFeaturesToNumeric(dataToConvert):
-    for col in dataToConvert:
-        if col == "home_team_api_id":
-            dataToConvert[col] = dataToConvert[col].apply(changeTeamID)
-            continue
-        if col == "away_team_api_id":
-            dataToConvert[col] = dataToConvert[col].apply(changeTeamID)
-            continue
-        dataToConvert[col] = dataToConvert[col].apply(helpFuncForConvert)
+    error = []
 
-    return dataToConvert
+    # Calculating error for K values between 1 and 40
+    for i in range(1, 40):
+        knn = KNeighborsClassifier(n_neighbors=i)
+        knn.fit(X_train, y_train)
+        pred_i = knn.predict(X_test)
+        error.append(np.mean(pred_i != y_test))
 
+    plt.figure(figsize=(12, 6))
+    plt.plot(range(1, 40), error, color='red', linestyle='dashed', marker='o',
+             markerfacecolor='blue', markersize=10)
+    plt.title('Error Rate K Value')
+    plt.xlabel('K Value')
+    plt.ylabel('Mean Error')
 
-def helpFuncForConvert(x):
-    speedClass = ["Slow", "Balanced", "Fast"]
-    dribblingClass = ["Little", "Normal", "Lots"]
-    passingClass = ["Short", "Mixed", "Long"]
-    positioningClass = ["Organised", "Free Form"]
-    pressureClass = ["Medium", "Deep", "High"]
-    aggressionClass = ["Press", "Double", "Contain"]
-    goalClass = ["0", "1", "2", "3+"]
-    whereBetterClass = ["Home", "Away", "NeverMind"]
-    resultClass = ["Win", "Lose", "Draw"]
+    plt.show()
 
 
-    if x in speedClass:
-        return speedClass.index(x)
-    elif x in dribblingClass:
-        return dribblingClass.index(x)
-    elif x in passingClass:
-        return passingClass.index(x)
-    elif x in positioningClass:
-        return positioningClass.index(x)
-    elif x in pressureClass:
-        return pressureClass.index(x)
-    elif x in aggressionClass:
-        return aggressionClass.index(x)
-    elif x in goalClass:
-        return goalClass.index(x)
-    elif x in whereBetterClass:
-        return whereBetterClass.index(x)
-    elif x in resultClass:
-        return resultClass.index(x)
+def trainWithGridSearchCV(trainData, testData):
+
+    """--------------------------------- Splitting The Train Data ------------------------------------"""
+
+    X = trainData.iloc[:, :-1].values
+    y = trainData.iloc[:, len(trainData.columns) - 1].values
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
+
+    """--------------------------------- Feature Scaling ------------------------------------"""
+
+    scaler = StandardScaler()
+    scaler.fit(X_train)
+
+    X_train = scaler.transform(X_train)
+    X_test = scaler.transform(X_test)
 
 
-def changeTeamID(x):
-    if str(x) not in dic_of_team_id:
-        dic_of_team_id[str(x)] = random.uniform(0, 3)
-    return dic_of_team_id[str(x)]
+    """--------------------------------- GridSearchCV Parameters ------------------------------------"""
 
+
+    leaf_size = list(range(1, 50))
+    n_neighbors = list(range(1, 35))
+    p = [1, 2]
+    meTri = ['euclidean', 'manhattan']
+
+    # making the instance
+    model = KNeighborsClassifier(n_jobs=-1)
+    # Hyper Parameters Set
+    params = {'n_neighbors': n_neighbors,
+              'leaf_size': leaf_size,
+              'weights': ['uniform', 'distance'],
+              'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
+              'n_jobs': [-1],
+              'metric': meTri,
+              'p': p}
+    # Making models with hyper parameters sets
+    model1 = GridSearchCV(model, param_grid=params, cv=10, n_jobs=1)
+    # Learning
+    model1.fit(X_train, y_train)
+    # The best hyper parameters set
+    print("Best Hyper Parameters:\n", model1.best_params_)
+    # Prediction
+    prediction = model1.predict(X_test)
+
+    # evaluation(Accuracy)
+    print("Accuracy:", metrics.accuracy_score(prediction, y_test))
+    # evaluation(Confusion Matrix)
+    print("Confusion Matrix:\n", metrics.confusion_matrix(prediction, y_test))
+
+
+    """--------------------------------- *** 2015/2016 *** ------------------------------------"""
+
+    print("\n\n ************ Season 2015/2016 Prediction ************\n")
+
+    """--------------------------------- Splitting The Test Data ------------------------------------"""
+
+    season_15_16_features = testData.iloc[:, :-1].values
+    season_15_16_Result = testData.iloc[:, len(testData.columns) - 1].values
+
+    """--------------------------------- Feature Scaling ------------------------------------"""
+
+    scaler = StandardScaler()
+    scaler.fit(season_15_16_features)
+
+    season_15_16_features = scaler.transform(season_15_16_features)
+
+    """--------------------------------- Prediction And Evaluation Of 2015/2016 ------------------------------------"""
+
+    # Prediction
+    prediction = model1.predict(season_15_16_features)
+
+    # evaluation(Accuracy)
+    print("Accuracy:", metrics.accuracy_score(prediction, season_15_16_Result))
+    # evaluation(Confusion Matrix)
+    print("Confusion Matrix:\n", metrics.confusion_matrix(prediction, season_15_16_Result))
