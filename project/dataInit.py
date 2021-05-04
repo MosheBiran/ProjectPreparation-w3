@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 
 from sklearn import preprocessing
 
-path = "C:\\Users\\Daniel\\Downloads\\archive\\"
+path = ""
 
 
 def create_connection(db_file):
@@ -126,10 +126,35 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
     away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
 
-    HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
-    HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
+    HomeAndAwayTeam_player_attr_mean_df['players_rating'] = data_match_players_df[home_col_mean_lst].mean(1) / data_match_players_df[away_col_mean_lst].mean(1)
+    # HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)
+    # HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)
 
     return HomeAndAwayTeam_player_attr_mean_df
+
+
+def dataframe_mean_goals(data_df):
+    data_home_df = data_df.groupby(['home_team_api_id'], as_index=False)['home_team_goal'].mean()
+    data_away_df = data_df.groupby(['away_team_api_id'], as_index=False)['away_team_goal'].mean()
+
+    home_away_goals = pd.merge(data_home_df, data_away_df, how='outer', left_on=['home_team_api_id'], right_on=['away_team_api_id'])
+    home_away_goals['goal'] = home_away_goals[['home_team_goal','away_team_goal']].mean(1)
+    del home_away_goals['away_team_api_id']
+    del home_away_goals['home_team_goal']
+    del home_away_goals['away_team_goal']
+
+    data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['home_team_api_id'], right_on=['home_team_api_id'])
+    data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['away_team_api_id'], right_on=['home_team_api_id'])
+    data_df['goals_mean'] = data_df['goal_x']/data_df['goal_y']
+
+    data_df.rename(columns={'home_team_api_id_x': 'home_team_api_id'}, inplace=True)
+
+    del data_df['goal_x']
+    del data_df['goal_y']
+    del data_df['home_team_api_id_y']
+
+    return data_df
+
 
 
 def addTeamNames(new_df, data_team):
@@ -302,8 +327,8 @@ def clearUnusedFeatures(new_df):
     :param new_df: The Dataframe that we need to clear
     :return: The Dataframe after clean
     """
-    del new_df["home_team_goal"]
-    del new_df["away_team_goal"]
+    # del new_df["home_team_goal"]
+    # del new_df["away_team_goal"]
     del new_df["season"]
     del new_df["date"]
     del new_df["home_team_api_id"]
@@ -394,6 +419,7 @@ def init():
     matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
 
     matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
+    matchWithTeamAttributes_df = dataframe_mean_goals(matchWithTeamAttributes_df)
 
     # Calculate Where The Team Playing Better
     trainData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
