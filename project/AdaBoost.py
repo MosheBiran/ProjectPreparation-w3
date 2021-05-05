@@ -49,7 +49,7 @@ def runAdaBoost(trainData, test_15_16):
 
 
     n_trees = [100]
-    k_fold = [i for i in range(2,35)]
+    k_fold = [i for i in range(2, 35)]
     for n in n_trees:
         for k in k_fold:
             print(k)
@@ -69,7 +69,7 @@ def my_custom_loss_func(y_true, y_pred):
 
 
 # function that iterates over params and check which is the best
-def calcBestNumOfFolds(clf,X,y,n,test_data,test_label,trainData):
+def calcBestNumOfFolds(clf, X, y, n, test_data, test_label, trainData):
     # var to save max for 2015_2016
     max_acc = 0
     kf = KFold(n_splits=n, random_state=None, shuffle=False)
