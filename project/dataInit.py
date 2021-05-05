@@ -148,12 +148,12 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     """--------------------------------- All Other Features ------------------------------------"""
 
 
-    home_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_home_' in col]
-    away_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_away_' in col]
-    HomeAndAwayTeam_player_attr_mean_df['home_player_pot_mean'] = data_match_players_df[home_col_mean_lst].mean(
-        1) / 100
-    HomeAndAwayTeam_player_attr_mean_df['away_player_pot_mean'] = data_match_players_df[away_col_mean_lst].mean(
-        1) / 100
+    # home_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_home_' in col]
+    # away_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_away_' in col]
+    # HomeAndAwayTeam_player_attr_mean_df['home_player_pot_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #     1) / 100
+    # HomeAndAwayTeam_player_attr_mean_df['away_player_pot_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #     1) / 100
 
     home_col_mean_lst = [col for col in data_match_players_df.columns if 'free_kick_accuracy_home_' in col]
     away_col_mean_lst = [col for col in data_match_players_df.columns if 'free_kick_accuracy_away_' in col]
@@ -162,19 +162,19 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     HomeAndAwayTeam_player_attr_mean_df['away_player_free_kick_mean'] = data_match_players_df[away_col_mean_lst].mean(
         1) / 100
 
-    # home_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_home_' in col]
-    # away_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_away_' in col]
-    # HomeAndAwayTeam_player_attr_mean_df['home_player_gk_kicking_mean'] = data_match_players_df[home_col_mean_lst].mean(
-    #     1) / 100
-    # HomeAndAwayTeam_player_attr_mean_df['away_player_gk_kicking_mean'] = data_match_players_df[away_col_mean_lst].mean(
-    #     1) / 100
+    home_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_home_' in col]
+    away_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_away_' in col]
+    HomeAndAwayTeam_player_attr_mean_df['home_player_gk_kicking_mean'] = data_match_players_df[home_col_mean_lst].mean(
+        1) / 100
+    HomeAndAwayTeam_player_attr_mean_df['away_player_gk_kicking_mean'] = data_match_players_df[away_col_mean_lst].mean(
+        1) / 100
 
-    home_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_home_' in col]
-    away_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_away_' in col]
-    HomeAndAwayTeam_player_attr_mean_df['home_player_shot_power_mean'] = data_match_players_df[home_col_mean_lst].mean(
-        1) / 100
-    HomeAndAwayTeam_player_attr_mean_df['away_player_shot_power_mean'] = data_match_players_df[away_col_mean_lst].mean(
-        1) / 100
+    # home_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_home_' in col]
+    # away_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_away_' in col]
+    # HomeAndAwayTeam_player_attr_mean_df['home_player_shot_power_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #     1) / 100
+    # HomeAndAwayTeam_player_attr_mean_df['away_player_shot_power_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #     1) / 100
 
 
 
@@ -461,14 +461,19 @@ def clearUnusedFeatures(new_df):
     del new_df["date"]
     del new_df["home_team_api_id"]
     del new_df["away_team_api_id"]
-    # del new_df["home_percentHome"]
-    # del new_df["home_percentAway"]
-    # del new_df["away_percentHome"]
-    # del new_df["away_percentAway"]
+    del new_df["home_percentHome"]
+    del new_df["home_percentAway"]
+    del new_df["away_percentHome"]
+    del new_df["away_percentAway"]
 
 
-    # del new_df["away_whereBetter"]
-    # # del new_df["home_whereBetter"]
+    del new_df["away_whereBetter"]
+    del new_df["home_whereBetter"]
+
+    del new_df["home_season_team_goal"]
+    del new_df["away_season_team_goal"]
+    del new_df["home_other_season_team_goal"]
+    del new_df["away_other_season_team_goal"]
 
 
 

@@ -19,7 +19,7 @@ def model_SVM(trainData, testData):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
 
     # making the instance
-    model = svm.SVC(random_state=123)
+    model = svm.LinearSVC()
     # learning
     model.fit(X_train, y_train)
     # Prediction

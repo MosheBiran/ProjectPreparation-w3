@@ -4,31 +4,7 @@ import numpy as np
 from matplotlib.pyplot import show
 
 
-def binGoals(df):
-    """
-    Binning The Goals Number Into Better Distribution
-    :param df: The DataFrame That Contain The Goals Before The Binning
-    :return: The DataFrame After The Binning
-    """
-    # Adding a column of discretization to the home goals.
-    conditions = [df["home_team_goal"] == 0,
-                  df["home_team_goal"] == 1,
-                  df["home_team_goal"] == 2,
-                  df["home_team_goal"] >= 3]
 
-    choices = ["0", "1", "2", "3+"]
-    df["home_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
-
-    # Adding a column of discretization to the away goals.
-    conditions = [df["away_team_goal"] == 0,
-                  df["away_team_goal"] == 1,
-                  df["away_team_goal"] == 2,
-                  df["away_team_goal"] >= 3]
-
-    choices = ["0", "1", "2", "3+"]
-    df["away_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
-
-    return df
 
 
 def check_data(df):
@@ -72,3 +48,31 @@ def check_data(df):
     # show()
     # df['away_team_goal_bin'].hist()
     # show()
+
+
+
+def binGoals(df):
+    """
+    Binning The Goals Number Into Better Distribution
+    :param df: The DataFrame That Contain The Goals Before The Binning
+    :return: The DataFrame After The Binning
+    """
+    # Adding a column of discretization to the home goals.
+    conditions = [df["home_team_goal"] == 0,
+                  df["home_team_goal"] == 1,
+                  df["home_team_goal"] == 2,
+                  df["home_team_goal"] >= 3]
+
+    choices = ["0", "1", "2", "3+"]
+    df["home_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
+
+    # Adding a column of discretization to the away goals.
+    conditions = [df["away_team_goal"] == 0,
+                  df["away_team_goal"] == 1,
+                  df["away_team_goal"] == 2,
+                  df["away_team_goal"] >= 3]
+
+    choices = ["0", "1", "2", "3+"]
+    df["away_team_goal_bin"] = np.select(conditions, choices, default=np.nan)
+
+    return df

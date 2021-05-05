@@ -24,7 +24,7 @@ def model_KNN(trainData, testData):
     X = trainData.iloc[:, :-1].values
     y = trainData.iloc[:, len(trainData.columns) - 1].values
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=40)
 
 
     """--------------------------------- Feature Scaling ------------------------------------"""
@@ -39,7 +39,7 @@ def model_KNN(trainData, testData):
     """--------------------------------- Train Of The Model ------------------------------------"""
 
 
-    classifier = KNeighborsClassifier(n_neighbors=21)
+    classifier = KNeighborsClassifier(n_neighbors=34, metric='euclidean', n_jobs=-1, p=1, weights='uniform')
     classifier.fit(X_train, y_train)
 
 
@@ -67,9 +67,6 @@ def model_KNN(trainData, testData):
 
 
     """--------------------------------- Feature Scaling ------------------------------------"""
-
-    scaler = StandardScaler()
-    scaler.fit(season_15_16_features)
 
     season_15_16_features = scaler.transform(season_15_16_features)
 
@@ -126,7 +123,7 @@ def trainWithGridSearchCV(trainData, testData):
     """--------------------------------- GridSearchCV Parameters ------------------------------------"""
 
 
-    leaf_size = list(range(1, 50))
+    # leaf_size = list(range(1, 20))
     n_neighbors = list(range(1, 35))
     p = [1, 2]
     meTri = ['euclidean', 'manhattan']
@@ -135,14 +132,14 @@ def trainWithGridSearchCV(trainData, testData):
     model = KNeighborsClassifier(n_jobs=-1)
     # Hyper Parameters Set
     params = {'n_neighbors': n_neighbors,
-              'leaf_size': leaf_size,
+              # 'leaf_size': leaf_size,
               'weights': ['uniform', 'distance'],
-              'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
+              # 'algorithm': ['auto', 'ball_tree', 'kd_tree', 'brute'],
               'n_jobs': [-1],
               'metric': meTri,
               'p': p}
     # Making models with hyper parameters sets
-    model1 = GridSearchCV(model, param_grid=params, cv=10, n_jobs=1)
+    model1 = GridSearchCV(model, param_grid=params, n_jobs=1)
     # Learning
     model1.fit(X_train, y_train)
     # The best hyper parameters set
@@ -166,9 +163,6 @@ def trainWithGridSearchCV(trainData, testData):
     season_15_16_Result = testData.iloc[:, len(testData.columns) - 1].values
 
     """--------------------------------- Feature Scaling ------------------------------------"""
-
-    scaler = StandardScaler()
-    scaler.fit(season_15_16_features)
 
     season_15_16_features = scaler.transform(season_15_16_features)
 
