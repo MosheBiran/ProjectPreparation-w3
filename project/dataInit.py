@@ -3,6 +3,7 @@ from aifc import Error
 
 import numpy as np
 import pandas as pd
+from matplotlib.pyplot import show
 
 from scipy.interpolate import rbf
 from sklearn.model_selection import train_test_split
@@ -10,9 +11,10 @@ from sklearn import svm
 from functools import reduce
 import xml.etree.ElementTree as ET
 
+
 from sklearn import preprocessing
 
-path = ""
+path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
 
 def create_connection(db_file):
@@ -138,7 +140,7 @@ def dataframe_mean_goals(data_df):
     data_away_df = data_df.groupby(['away_team_api_id'], as_index=False)['away_team_goal'].mean()
 
     home_away_goals = pd.merge(data_home_df, data_away_df, how='outer', left_on=['home_team_api_id'], right_on=['away_team_api_id'])
-    home_away_goals['goal'] = home_away_goals[['home_team_goal','away_team_goal']].mean(1)
+    home_away_goals['goal'] = home_away_goals[['home_team_goal', 'away_team_goal']].mean(1)
     del home_away_goals['away_team_api_id']
     del home_away_goals['home_team_goal']
     del home_away_goals['away_team_goal']
@@ -185,12 +187,10 @@ def remove_x_y(new_df_with_name):
     for col in new_df_with_name.columns:
         if '_x' == col[len(col) - 2:len(col)]:
             new_df_with_name = new_df_with_name.rename(
-                columns={col: 'home_' + col[:len(col) - 2]}
-                , inplace=False)
+                columns={col: 'home_' + col[:len(col) - 2]}, inplace=False)
         if '_y' == col[len(col) - 2:len(col)]:
             new_df_with_name = new_df_with_name.rename(
-                columns={col: 'away_' + col[:len(col) - 2]}
-                , inplace=False)
+                columns={col: 'away_' + col[:len(col) - 2]}, inplace=False)
 
     return new_df_with_name
 
@@ -327,8 +327,8 @@ def clearUnusedFeatures(new_df):
     :param new_df: The Dataframe that we need to clear
     :return: The Dataframe after clean
     """
-    # del new_df["home_team_goal"]
-    # del new_df["away_team_goal"]
+    del new_df["home_team_goal"]
+    del new_df["away_team_goal"]
     del new_df["season"]
     del new_df["date"]
     del new_df["home_team_api_id"]
@@ -385,6 +385,92 @@ def DataFrame_Info_String2Numeric(data):
     return data
 
 
+def addLastMatchesGoals(match_Data_DF):
+
+    # origin_DF = match_Data_DF.copy()
+    # origin_DF = origin_DF.sort_values(by=['home_team_api_id', 'date'])  # TODO : No Need
+
+
+    """--------------------------------- Splitting To Home And Away------------------------------------"""
+
+
+    match_sorted_by_home = match_Data_DF.sort_values(by=['home_team_api_id', 'date'])
+    match_sorted_by_home = match_sorted_by_home[['home_team_api_id', 'date', 'home_team_goal']]
+
+    match_sorted_by_away = match_Data_DF.sort_values(by=['away_team_api_id', 'date'])
+    match_sorted_by_away = match_sorted_by_away[['away_team_api_id', 'date', 'away_team_goal']]
+
+
+    """--------------------------------- Home Team Goals Calculate ------------------------------------"""
+
+
+    match_sorted_by_home.insert(len(match_sorted_by_home.columns), 'Home_LastMatchesGoals', match_sorted_by_home['home_team_goal'])
+    inxOfCol = len(match_sorted_by_home.columns) - 1
+
+    homeAfterAdd = homeOrAwayGoals(match_sorted_by_home, inxOfCol, 'home_')
+
+
+    """--------------------------------- Away Team Goals Calculate ------------------------------------"""
+
+
+    match_sorted_by_away.insert(len(match_sorted_by_away.columns), 'Away_LastMatchesGoals', match_sorted_by_away['away_team_goal'])
+    inxOfCol = len(match_sorted_by_away.columns) - 1
+
+    awayAfterAdd = homeOrAwayGoals(match_sorted_by_away, inxOfCol, 'away_')
+
+
+    """--------------------------------- Merge To Main Data ------------------------------------"""
+
+
+    match_Data_DF = pd.merge(match_Data_DF, homeAfterAdd, how='inner',
+                             left_on=['home_team_api_id', 'date', 'home_team_goal'],
+                             right_on=['home_team_api_id', 'date', 'home_team_goal'])
+
+    match_Data_DF = pd.merge(match_Data_DF, awayAfterAdd, how='inner',
+                             left_on=['away_team_api_id', 'date', 'away_team_goal'],
+                             right_on=['away_team_api_id', 'date', 'away_team_goal'])
+
+
+    # # TODO : For Check
+    # match_Data_DF = match_Data_DF.sort_values(by=['home_team_api_id', 'date'])
+    # match_Data_DF['Home_LastMatchesGoals'].hist()
+    # print(match_Data_DF['Home_LastMatchesGoals'].value_counts())
+    # show()
+    # match_Data_DF['Away_LastMatchesGoals'].hist()
+    # print(match_Data_DF['Away_LastMatchesGoals'].value_counts())
+    # show()
+
+    return match_Data_DF
+
+
+
+
+
+def homeOrAwayGoals(sortedHomeOrAway, inxOfCol, home_away, gamesBack=5):
+    i = 0
+    indexesOfStarts = []
+    teamID = 0
+    while i < len(sortedHomeOrAway):
+        if sortedHomeOrAway.iloc[i, 0] != teamID:
+            indexesOfStarts.append(i)
+            i += gamesBack
+            teamID = sortedHomeOrAway.iloc[i, 0]
+
+        sortedHomeOrAway.iat[i, inxOfCol] = sortedHomeOrAway[home_away+'team_goal'][i - gamesBack: i].sum()
+        i += 1
+
+    for i, indexNow in enumerate(indexesOfStarts):
+        if i + 1 != len(indexesOfStarts):
+            fillMean = np.floor(sortedHomeOrAway.iloc[indexNow + gamesBack:indexesOfStarts[i + 1], inxOfCol].mean())
+        else:
+            fillMean = np.floor(sortedHomeOrAway.iloc[indexNow + gamesBack:, inxOfCol].mean())
+        for j in range(indexNow, indexNow + gamesBack):
+            sortedHomeOrAway.iat[j, inxOfCol] = fillMean
+
+    return sortedHomeOrAway
+
+
+
 
 
 def init():
@@ -403,6 +489,10 @@ def init():
 
     # create DF
     match_Data_DF, team_Attr_Data_DF, teams_Data_DF, data_Players_AttrDF, data_matchDF_players = sqlQuery(conn)
+
+
+    # TODO : Try Add 5 Past Games Goal
+    match_Data_DF = addLastMatchesGoals(match_Data_DF)
 
 
     """--------------------------------- Merging All The DataFrames Into One ------------------------------------"""
@@ -451,40 +541,40 @@ def init():
 
 
 
-def temp():
-    database = path + "database.sqlite"
-
-    # create a database connection
-    conn = create_connection(database)
-    cursor = conn.cursor()
-
-    data_matchDF = pd.read_sql_query(
-        'SELECT home_team_api_id,away_team_api_id, shoton from Match', conn)
-
-    print(data_matchDF.apply(lambda x: sum(x.isnull()), axis=0))
-
-    for x in data_matchDF['shoton']:
-        if x is None:
-            continue
-        root = ET.XML(x)  # Parse XML
-
-        data = []
-        cols = []
-        flag = 0
-        for i, child in enumerate(root.iter()):
-            print(child.tag)
-            if child.tag == 'shoton':
-                flag += 1
-
-            if flag <= 1:
-                cols.append(child.tag)
-
-            for subchild in child:
-                data.append(subchild.text)
-
-        df = pd.DataFrame(data).T  # Write in DF and transpose it
-        df.columns = cols  # Update column names
-        print(df)
-
-    cursor.close()
-    conn.close()
+# def temp():
+#     database = path + "database.sqlite"
+#
+#     # create a database connection
+#     conn = create_connection(database)
+#     cursor = conn.cursor()
+#
+#     data_matchDF = pd.read_sql_query(
+#         'SELECT home_team_api_id,away_team_api_id, shoton from Match', conn)
+#
+#     print(data_matchDF.apply(lambda x: sum(x.isnull()), axis=0))
+#
+#     for x in data_matchDF['shoton']:
+#         if x is None:
+#             continue
+#         root = ET.XML(x)  # Parse XML
+#
+#         data = []
+#         cols = []
+#         flag = 0
+#         for i, child in enumerate(root.iter()):
+#             print(child.tag)
+#             if child.tag == 'shoton':
+#                 flag += 1
+#
+#             if flag <= 1:
+#                 cols.append(child.tag)
+#
+#             for subchild in child:
+#                 data.append(subchild.text)
+#
+#         df = pd.DataFrame(data).T  # Write in DF and transpose it
+#         df.columns = cols  # Update column names
+#         print(df)
+#
+#     cursor.close()
+#     conn.close()

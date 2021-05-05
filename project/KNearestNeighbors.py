@@ -1,11 +1,12 @@
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import GridSearchCV
-
+import shap
 
 
 # importing the metrics module - For GridCV
@@ -40,6 +41,11 @@ def model_KNN(trainData, testData):
 
     classifier = KNeighborsClassifier(n_neighbors=21)
     classifier.fit(X_train, y_train)
+
+
+    """--------------------------------- *** Visualize The Variables ------------------------------------"""
+
+
 
 
     """--------------------------------- Prediction And Evaluation------------------------------------"""
