@@ -4,7 +4,7 @@ import SupportVectorMachine
 import dataAnalyze
 # import GaussianNaiveBayes
 
-from project import AdaBoost, KNearestNeighbors,dataInit
+from project import AdaBoost, KNearestNeighbors, dataInit
 
 if __name__ == '__main__':
     trainData, testData = dataInit.init()

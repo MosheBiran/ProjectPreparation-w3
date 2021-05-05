@@ -15,6 +15,8 @@ https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClass
 # path = "C:\\Users\\liadn\\Downloads\\"
 
 # main function to run AdaBoost algorithm
+
+
 def runAdaBoost(trainData, test_15_16):
     # trainData = trainData.drop(['home_buildUpPlaySpeedClass', 'home_buildUpPlayDribblingClass',
     #                 'home_buildUpPlayPassingClass', 'home_buildUpPlayPositioningClass',
