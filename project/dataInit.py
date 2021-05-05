@@ -129,6 +129,10 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     data_match_players_df = data_match_players_df.drop(
         [col for col in data_match_players_df.columns if 'player_api_id' in col], axis=1)
 
+
+    """--------------------------------- Overall Rating ------------------------------------"""
+
+
     # Creating a list of all columns that relevant to that specific team mean.
     home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
     away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
@@ -136,6 +140,10 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
         1) / 100
     HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(
         1) / 100
+
+
+    """--------------------------------- All Other Features ------------------------------------"""
+
 
     home_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_home_' in col]
     away_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_away_' in col]
@@ -168,7 +176,13 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
     HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
 
+
+    """--------------------------------- All Other Features ------------------------------------"""
+
+
     return HomeAndAwayTeam_player_attr_mean_df
+
+
 
 def dataframe_attributeTeam_ratio(data_df):
     data_df['buildUpPlaySpeed'] = data_df['buildUpPlaySpeed_x']/data_df['buildUpPlaySpeed_y']
@@ -242,6 +256,8 @@ def dataframe_mean_goals(data_df):
     # del data_df['home_team_api_id_y']
 
     return data_df
+
+
 
 def dataframe_other_team_goals(data_df):
 

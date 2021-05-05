@@ -4,7 +4,6 @@ import SupportVectorMachine
 import dataAnalyze
 # import GaussianNaiveBayes
 
-from project import AdaBoost, KNearestNeighbors, dataInit
 from project import AdaBoost, KNearestNeighbors, dataInit, SupportVectorMachine, dataAnalyze
 
 if __name__ == '__main__':
@@ -21,10 +20,8 @@ if __name__ == '__main__':
     # K - Nearest Neighbors Model:
     KNearestNeighbors.model_KNN(trainData, testData)
     # KNearestNeighbors.trainWithGridSearchCV(trainData, testData)
-    #KNearestNeighbors.model_KNN(trainData, testData)
 
     # SVM
     # SupportVectorMachine.model_SVM(trainData, testData)
-    #SVM
-    # SupportVectorMachine.model_SVM(trainData, testData)
+
 
