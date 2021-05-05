@@ -141,6 +141,9 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(
         1) / 100
 
+    # HomeAndAwayTeam_player_attr_mean_df['players_rating'] = data_match_players_df[home_col_mean_lst].mean(1) / data_match_players_df[away_col_mean_lst].mean(1)
+
+
 
     """--------------------------------- All Other Features ------------------------------------"""
 
@@ -172,9 +175,7 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
         1) / 100
     HomeAndAwayTeam_player_attr_mean_df['away_player_shot_power_mean'] = data_match_players_df[away_col_mean_lst].mean(
         1) / 100
-    # HomeAndAwayTeam_player_attr_mean_df['players_rating'] = data_match_players_df[home_col_mean_lst].mean(1) / data_match_players_df[away_col_mean_lst].mean(1)
-    HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(1)/100
-    HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(1)/100
+
 
 
     """--------------------------------- All Other Features ------------------------------------"""
