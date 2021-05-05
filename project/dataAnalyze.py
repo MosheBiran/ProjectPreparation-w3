@@ -31,28 +31,35 @@ def binGoals(df):
     return df
 
 
-def check_data():
-    # Reading the dataset in a dataframe using Pandas
-    df = pd.read_csv("2012_2013_2014.csv")
-
+def check_data(df):
     # print the data types of the attributes in the DataFrame
     print(df.dtypes)
+    print(df.apply(lambda x: sum(x.isnull()), axis=0))
 
     # Frequency distribution for non-numerical attributes
     for col in df:
         print(df[col].value_counts())
+        df[col].hist()
+        show()
+
+        temp3 = pd.crosstab(df[col], df['Result'])
+        temp3.plot(kind='bar', stacked=True, color=['red', 'blue', 'green'], grid=False)
+        show()
+
+
+
 
     print(df.describe())
-    print(df.apply(lambda x: sum(x.isnull()), axis=0))
+    # print(df.apply(lambda x: sum(x.isnull()), axis=0))
 
-    df['home_team_goal'].hist()
-    show()
-    df['away_team_goal'].hist()
-    show()
-
-    temp3 = pd.crosstab(df['stage'], df['result'])
-    temp3.plot(kind='bar', stacked=True, color=['red', 'blue', 'green'], grid=False)
-    show()
+    # df['home_team_goal'].hist()
+    # show()
+    # df['away_team_goal'].hist()
+    # show()
+    #
+    # temp3 = pd.crosstab(df['stage'], df['result'])
+    # temp3.plot(kind='bar', stacked=True, color=['red', 'blue', 'green'], grid=False)
+    # show()
 
     # bins = [1, 2, 3]
     # group_names = ['0', '1', '2', '3+']
@@ -61,7 +68,7 @@ def check_data():
     # # Count the number of observations which each value
     # print (pd.value_counts(df["home_team_goal_Bin"], sort=False))
     # print(df)
-    df['home_team_goal_bin'].hist()
-    show()
-    df['away_team_goal_bin'].hist()
-    show()
+    # df['home_team_goal_bin'].hist()
+    # show()
+    # df['away_team_goal_bin'].hist()
+    # show()
