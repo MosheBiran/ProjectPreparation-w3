@@ -1,6 +1,7 @@
 import pip
 import shap
 import matplotlib.pyplot as plt
+from matplotlib import pyplot
 from sklearn.ensemble import AdaBoostClassifier
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -48,42 +49,17 @@ def runAdaBoost(trainData, test_15_16):
 
 
     n_trees = [100]
-    k_fold = [i for i in range(2,50)]
+    k_fold = [i for i in range(2,35)]
     for n in n_trees:
         for k in k_fold:
             print(k)
             clf = AdaBoostClassifier(n_estimators=n, random_state=0)
-            # calcBestNumOfFolds(clf, X, y, 32, test_data, test_label)
             calcBestNumOfFolds(clf, X, y, 32, test_data, test_label,trainData)
 
 
 #######################################
     # calcBestNumOfFolds(clf,X,y,5,test_data,test_label)
 #######################################
-
-    # # start train model
-    # clf.fit(X_train, y_train)
-    #
-    # # prediction of trained model
-    # y_pred = clf.predict(X_test)
-    #
-    # # prediction of trained model - *test*
-    # y_pred_test = clf.predict(test_data)
-    #
-    # # calculate loss function
-    # loss = my_custom_loss_func(y_test, y_pred)
-    #
-    # # calculate confusion matrix
-    # arr = confusion_matrix(y_test, y_pred)
-    # print(arr)
-    # print("*****RUN ON 12_13_14*****")
-    # # calculate model accuracy
-    # acc = accuracy_score(y_test, y_pred)
-    # print(acc)
-    # print("*****RUN ON 15_16*****")
-    # # calculate model accuracy
-    # acc_test = accuracy_score(test_label, y_pred_test)
-    # print(acc_test)
 
 
 
@@ -96,10 +72,6 @@ def my_custom_loss_func(y_true, y_pred):
 def calcBestNumOfFolds(clf,X,y,n,test_data,test_label,trainData):
     # var to save max for 2015_2016
     max_acc = 0
-
-
-    # for i in range(2,n):
-        # max acc variable
     kf = KFold(n_splits=n, random_state=None, shuffle=False)
     for train_index, test_index in kf.split(X):
         X_train, X_test = X[train_index], X[test_index]
