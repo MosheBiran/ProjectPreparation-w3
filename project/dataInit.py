@@ -99,7 +99,7 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
 
 
 # def dataframe_filter_players(data_match_players_df, player_attr_df,flag_pot,flag_shot_power,flag_gk,flag_free_kick):
-def dataframe_filter_players(data_match_players_df, player_attr_df,list_of_fields):
+def dataframe_filter_players(data_match_players_df, player_attr_df):
     """
     :param data_match_players_df:Another frame containing player ID and that player attributes
     :param player_attr_df:data frame containing all  matches between 2 teams include  the season and date they play against each other
@@ -145,197 +145,218 @@ def dataframe_filter_players(data_match_players_df, player_attr_df,list_of_field
     # HomeAndAwayTeam_player_attr_mean_df['players_rating'] = data_match_players_df[home_col_mean_lst].mean(1) / data_match_players_df[away_col_mean_lst].mean(1)
 
     """--------------------------------- All Other Features ------------------------------------"""
-    """------------------ Potential ------------------"""
-    if list_of_fields[0] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_pot_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_pot_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------free_kick_accuracy-----------"""
-    if list_of_fields[1] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'free_kick_accuracy_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'free_kick_accuracy_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_free_kick_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_free_kick_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------gk_kicking-------------------"""
-    if list_of_fields[2] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_gk_kicking_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_gk_kicking_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------shot_power-------------------"""
-    if list_of_fields[3] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_shot_power_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_shot_power_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    # """------------------preferred_foot-------------------"""
-    # home_col_mean_lst = [col for col in data_match_players_df.columns if 'preferred_foot_home_' in col]
-    # away_col_mean_lst = [col for col in data_match_players_df.columns if 'preferred_foot_away_' in col]
-    # HomeAndAwayTeam_player_attr_mean_df['home_player_preferred_foot_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    """------------------ mixed ------------------"""
+    # home_col_mean_lst = [
+    #                     col for col in data_match_players_df.columns
+    #                      if 'potential_home_' in col or 'free_kick_accuracy_home_' in col or 'gk_kicking_home_' in col
+    #                      or 'shot_power_home_' in col or 'crossing_home_' in col or 'finishing_home_' in col or 'heading_accuracy_home_' in col
+    #                      or 'short_passing_home_' in col or 'volleys_home_' in col or 'dribbling_home_' in col or 'curve_home_' in col
+    #                      or 'long_passing_home_' in col or 'ball_control_home_' in col or 'acceleration_home_' in col or
+    #                      'positioning_home_' in col or 'sprint_speed_home_' in col or 'aggression_home_' in col or 'long_shots_home_' in col
+    #                      ]
+    # away_col_mean_lst = [
+    #                     col for col in data_match_players_df.columns
+    #                      if 'potential_away_' in col or 'free_kick_accuracy_away_' in col or 'gk_kicking_away_' in col
+    #                      or 'shot_power_away_' in col or 'crossing_away_' in col or 'finishing_away_' in col or 'heading_accuracy_away_' in col
+    #                      or 'short_passing_away_' in col or 'volleys_away_' in col or 'dribbling_away_' in col or 'curve_away_' in col
+    #                      or 'long_passing_away_' in col or 'ball_control_away_' in col or 'acceleration_away_' in col or
+    #                      'positioning_away_' in col or 'sprint_speed_away_' in col or 'aggression_away_' in col or 'long_shots_away_' in col
+    #                      ]
+    # HomeAndAwayTeam_player_attr_mean_df['home_against_away_player_attr_mixed_features_mean'] = (data_match_players_df[home_col_mean_lst] /
+    #
+    #                                                                          data_match_players_df[
+    #                                                                               away_col_mean_lst]).mean(
     #     1) / 100
-    # HomeAndAwayTeam_player_attr_mean_df['away_player_preferred_foot_mean'] = data_match_players_df[away_col_mean_lst].mean(
-    #     1) / 100
-
-    """------------------crossing-------------------"""
-    if list_of_fields[4] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'crossing_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'crossing_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_crossing_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_crossing_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------finishing-------------------"""
-    if list_of_fields[5] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'finishing_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'finishing_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_finishing_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_finishing_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------heading_accuracy-------------------"""
-    if list_of_fields[6] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'heading_accuracy_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'heading_accuracy_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_heading_accuracy_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_heading_accuracy_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------short_passing-------------------"""
-    if list_of_fields[7] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'short_passing_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'short_passing_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_short_passing_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_short_passing_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------volleys-------------------"""
-    if list_of_fields[8] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'volleys_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'volleys_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_volleys_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_volleys_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------dribbling-------------------"""
-    if list_of_fields[9] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'dribbling_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'dribbling_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_dribbling_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_dribbling_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------curve-------------------"""
-    if list_of_fields[10] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'curve_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'curve_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_curve_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_curve_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------long_passing-------------------"""
-    if list_of_fields[11] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'long_passing_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'long_passing_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_long_passing_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_long_passing_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------penalties-------------------"""
-    if list_of_fields[12] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'penalties_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'penalties_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_penalties_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_penalties_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------ball_control-------------------"""
-    if list_of_fields[13] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'ball_control_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'ball_control_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_ball_control_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_ball_control_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------acceleration-------------------"""
-    if list_of_fields[14] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'acceleration_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'acceleration_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_acceleration_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_acceleration_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------positioning-------------------"""
-    if list_of_fields[15] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'positioning_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'positioning_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_positioning_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_positioning_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------sprint_speed-------------------"""
-    if list_of_fields[16] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'sprint_speed_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'sprint_speed_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_sprint_speed_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_sprint_speed_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------agility-------------------"""
-    if list_of_fields[17] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'agility_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'agility_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_agility_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_agility_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------aggression-------------------"""
-    if list_of_fields[18] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'aggression_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'aggression_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_aggression_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_aggression_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-    """------------------long_shots-------------------"""
-    if list_of_fields[19] == True:
-        home_col_mean_lst = [col for col in data_match_players_df.columns if 'long_shots_home_' in col]
-        away_col_mean_lst = [col for col in data_match_players_df.columns if 'long_shots_away_' in col]
-        HomeAndAwayTeam_player_attr_mean_df['home_player_long_shots_mean'] = data_match_players_df[home_col_mean_lst].mean(
-            1) / 100
-        HomeAndAwayTeam_player_attr_mean_df['away_player_long_shots_mean'] = data_match_players_df[away_col_mean_lst].mean(
-            1) / 100
-
-
+    # HomeAndAwayTeam_player_attr_mean_df['away_player_mixed_features_mean'] = (data_match_players_df[away_col_mean_lst]/data_match_players_df[home_col_mean_lst]).mean(
+    #       1) / 100
 
     """--------------------------------- All Other Features ------------------------------------"""
+
+
+    # """--------------------------------- All Other Features ------------------------------------"""
+    # """------------------ Potential ------------------"""
+    # if list_of_fields[0] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_pot_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_pot_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------free_kick_accuracy-----------"""
+    # if list_of_fields[1] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'free_kick_accuracy_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'free_kick_accuracy_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_free_kick_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_free_kick_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------gk_kicking-------------------"""
+    # if list_of_fields[2] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'gk_kicking_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_gk_kicking_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_gk_kicking_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------shot_power-------------------"""
+    # if list_of_fields[3] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'shot_power_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_shot_power_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_shot_power_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------crossing-------------------"""
+    # if list_of_fields[4] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'crossing_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'crossing_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_crossing_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_crossing_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------finishing-------------------"""
+    # if list_of_fields[5] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'finishing_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'finishing_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_finishing_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_finishing_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------heading_accuracy-------------------"""
+    # if list_of_fields[6] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'heading_accuracy_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'heading_accuracy_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_heading_accuracy_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_heading_accuracy_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------short_passing-------------------"""
+    # if list_of_fields[7] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'short_passing_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'short_passing_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_short_passing_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_short_passing_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------volleys-------------------"""
+    # if list_of_fields[8] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'volleys_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'volleys_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_volleys_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_volleys_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------dribbling-------------------"""
+    # if list_of_fields[9] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'dribbling_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'dribbling_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_dribbling_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_dribbling_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------curve-------------------"""
+    # if list_of_fields[10] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'curve_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'curve_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_curve_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_curve_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------long_passing-------------------"""
+    # if list_of_fields[11] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'long_passing_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'long_passing_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_long_passing_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_long_passing_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------penalties-------------------"""
+    # if list_of_fields[12] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'penalties_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'penalties_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_penalties_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_penalties_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------ball_control-------------------"""
+    # if list_of_fields[13] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'ball_control_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'ball_control_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_ball_control_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_ball_control_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------acceleration-------------------"""
+    # if list_of_fields[14] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'acceleration_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'acceleration_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_acceleration_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_acceleration_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------positioning-------------------"""
+    # if list_of_fields[15] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'positioning_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'positioning_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_positioning_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_positioning_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------sprint_speed-------------------"""
+    # if list_of_fields[16] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'sprint_speed_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'sprint_speed_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_sprint_speed_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_sprint_speed_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------agility-------------------"""
+    # if list_of_fields[17] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'agility_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'agility_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_agility_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_agility_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------aggression-------------------"""
+    # if list_of_fields[18] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'aggression_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'aggression_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_aggression_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_aggression_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    # """------------------long_shots-------------------"""
+    # if list_of_fields[19] == True:
+    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'long_shots_home_' in col]
+    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'long_shots_away_' in col]
+    #     HomeAndAwayTeam_player_attr_mean_df['home_player_long_shots_mean'] = data_match_players_df[home_col_mean_lst].mean(
+    #         1) / 100
+    #     HomeAndAwayTeam_player_attr_mean_df['away_player_long_shots_mean'] = data_match_players_df[away_col_mean_lst].mean(
+    #         1) / 100
+    #
+    #
+    #
+    # """--------------------------------- All Other Features ------------------------------------"""
 
     return HomeAndAwayTeam_player_attr_mean_df
 
@@ -499,7 +520,7 @@ def sqlQuery(conn):
     #     'SELECT player_api_id,date,overall_rating,potential,free_kick_accuracy,gk_kicking,shot_power from Player_Attributes',
     #     conn)
     data_Players_AttrDF = pd.read_sql_query(
-        'SELECT player_api_id,date,overall_rating,potential,free_kick_accuracy,gk_kicking,shot_power,preferred_foot,crossing,finishing,heading_accuracy,short_passing,volleys,dribbling,curve,long_passing,penalties,ball_control,acceleration,positioning,sprint_speed,agility,aggression,long_shots from Player_Attributes',
+        'SELECT player_api_id,date,overall_rating,potential,free_kick_accuracy,gk_kicking,shot_power,crossing,finishing,heading_accuracy,short_passing,volleys,dribbling,curve,long_passing,ball_control,acceleration,positioning,sprint_speed,aggression,long_shots from Player_Attributes',
         conn)
 
     data_matchDF_players = pd.read_sql_query(
@@ -768,9 +789,7 @@ def homeOrAwayGoals(sortedHomeOrAway, inxOfCol, home_away, gamesBack=5):
 
 
 
-#false false true true
-# def init(flag_pot,flag_shot_power,flag_gk,flag_free_kick):
-def init(list_of_fields):
+def init():
     """
     The Init And Building The Data From The Model Training And Testing
     :return: The Train Data , Test Data
@@ -796,7 +815,7 @@ def init(list_of_fields):
 
 
     # Players_Attr_avg = dataframe_filter_players(data_matchDF_players, data_Players_AttrDF,flag_pot,flag_shot_power,flag_gk,flag_free_kick)
-    Players_Attr_avg = dataframe_filter_players(data_matchDF_players, data_Players_AttrDF,list_of_fields)
+    Players_Attr_avg = dataframe_filter_players(data_matchDF_players, data_Players_AttrDF)
 
     matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
 
