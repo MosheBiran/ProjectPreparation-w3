@@ -15,7 +15,7 @@ if __name__ == '__main__':
     print("test Data Size:  " + str(len(testData)))
 
     # K - Nearest Neighbors Model:
-    # KNearestNeighbors.model_KNN(trainData, testData)
+    KNearestNeighbors.model_KNN(trainData, testData)
     # KNearestNeighbors.trainWithGridSearchCV(trainData, testData)
 
     # SVM

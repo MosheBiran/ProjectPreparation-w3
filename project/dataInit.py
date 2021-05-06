@@ -119,10 +119,10 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     """--------------------------------- *** Moshe *** ------------------------------------"""
 
 
-    player_attr_df['potential_growth'] = player_attr_df.potential - player_attr_df.overall_rating
-    player_attr_df['overall_rating_bool'] = player_attr_df.apply(lambda x: 1 if x['overall_rating'] > 80 else 0, axis=1)
-    player_attr_df['potential_growth_bool'] = player_attr_df.apply(lambda x: 1 if x['potential_growth'] > 4 else 0,
-                                                                   axis=1)
+    # player_attr_df['potential_growth'] = player_attr_df.potential - player_attr_df.overall_rating
+    # player_attr_df['overall_rating_bool'] = player_attr_df.apply(lambda x: 1 if x['overall_rating'] > 80 else 0, axis=1)
+    # player_attr_df['potential_growth_bool'] = player_attr_df.apply(lambda x: 1 if x['potential_growth'] > 4 else 0,
+    #                                                                axis=1)
 
     """---------------------------------***************------------------------------------"""
 
@@ -143,26 +143,26 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     """--------------------------------- *** Moshe *** ------------------------------------"""
 
 
-    """--------------------------------- potential_growth_bool ------------------------------------"""
-
-    # Creating a list of all columns that relevant to that specific team mean.
-    home_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_growth_bool_home_' in col]
-    away_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_growth_bool_away_' in col]
-    HomeAndAwayTeam_player_attr_mean_df['home_potential_growth_bool'] = data_match_players_df[home_col_mean_lst].mean(
-        1)
-
-    """--------------------------------- overall_rating_bool ------------------------------------"""
-
-    # Creating a list of all columns that relevant to that specific team mean.
-    home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_bool_home_' in col]
-    away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_bool_away_' in col]
-    HomeAndAwayTeam_player_attr_mean_df['home_overall_rating_bool'] = data_match_players_df[home_col_mean_lst].mean(
-        1) * 10
-    HomeAndAwayTeam_player_attr_mean_df['away_overall_rating_bool'] = data_match_players_df[away_col_mean_lst].mean(
-        1) * 10
-
-    """---------------------------------***************------------------------------------"""
-
+    # """--------------------------------- potential_growth_bool ------------------------------------"""
+    #
+    # # Creating a list of all columns that relevant to that specific team mean.
+    # home_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_growth_bool_home_' in col]
+    # away_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_growth_bool_away_' in col]
+    # HomeAndAwayTeam_player_attr_mean_df['home_potential_growth_bool'] = data_match_players_df[home_col_mean_lst].mean(
+    #     1)
+    #
+    # """--------------------------------- overall_rating_bool ------------------------------------"""
+    #
+    # # Creating a list of all columns that relevant to that specific team mean.
+    # home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_bool_home_' in col]
+    # away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_bool_away_' in col]
+    # HomeAndAwayTeam_player_attr_mean_df['home_overall_rating_bool'] = data_match_players_df[home_col_mean_lst].mean(
+    #     1) * 10
+    # HomeAndAwayTeam_player_attr_mean_df['away_overall_rating_bool'] = data_match_players_df[away_col_mean_lst].mean(
+    #     1) * 10
+    #
+    # """---------------------------------***************------------------------------------"""
+    #
 
     """--------------------------------- Overall Rating ------------------------------------"""
 
@@ -331,12 +331,12 @@ def dataframe_mean_goals(data_df):
 
     # data_df = pd.merge(data_df, copy_data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
     # data_df = pd.merge(data_df, copy_data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
-
-
-
+    #
+    #
+    #
     # data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
     # data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
-
+    #
     # data_df.rename(columns={'home_team_goal_y': 'home_season_team_goal'}, inplace=True)
     # data_df.rename(columns={'away_team_goal_y': 'away_season_team_goal'}, inplace=True)
 
@@ -754,6 +754,12 @@ def clearUnusedFeatures(new_df):
     #                       ], axis=1)
 
 
+    if "home_Away_LastMatchesGoals" in new_df:
+        del new_df["home_Away_LastMatchesGoals"]
+
+    if "away_Home_LastMatchesGoals" in new_df:
+        del new_df["away_Home_LastMatchesGoals"]
+
 
 
     new_df["Result"] = new_df["result"]
@@ -769,7 +775,7 @@ def margeWhereBetterWithMainData(df_2012_2013_2014_before, df_15_16_before):
     :param df_15_16_before: The Dataframe Of "whereBetter"
     :return: The Main Dataframe With The Feature "whereBetter"  - Train, Test
     """
-    df_percent_win_12_13_14 = getWhereBetterHomeOrAway(df_2012_2013_2014_before) # TODO: Remember To Active Back
+    df_percent_win_12_13_14 = getWhereBetterHomeOrAway(df_2012_2013_2014_before)  # TODO: Remember To Active Back
     df_percent_win_15_16 = getWhereBetterHomeOrAway(df_15_16_before)
 
     df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before, df_percent_win_12_13_14, how='inner',
@@ -804,9 +810,6 @@ def DataFrame_Info_String2Numeric(data):
 
 
 def addLastMatchesGoals(match_Data_DF):
-
-    # origin_DF = match_Data_DF.copy()
-    # origin_DF = origin_DF.sort_values(by=['home_team_api_id', 'date'])  # TODO : No Need
 
 
     """--------------------------------- Splitting To Home And Away------------------------------------"""
@@ -848,15 +851,6 @@ def addLastMatchesGoals(match_Data_DF):
                              left_on=['away_team_api_id', 'date', 'away_team_goal'],
                              right_on=['away_team_api_id', 'date', 'away_team_goal'])
 
-
-    # # TODO : For Check
-    # match_Data_DF = match_Data_DF.sort_values(by=['home_team_api_id', 'date'])
-    # match_Data_DF['Home_LastMatchesGoals'].hist()
-    # print(match_Data_DF['Home_LastMatchesGoals'].value_counts())
-    # show()
-    # match_Data_DF['Away_LastMatchesGoals'].hist()
-    # print(match_Data_DF['Away_LastMatchesGoals'].value_counts())
-    # show()
 
     return match_Data_DF
 
@@ -910,7 +904,7 @@ def init():
 
 
     # TODO : Try Add 5 Past Games Goal
-    # match_Data_DF = addLastMatchesGoals(match_Data_DF)
+    match_Data_DF = addLastMatchesGoals(match_Data_DF)
 
 
     """--------------------------------- Merging All The DataFrames Into One ------------------------------------"""
@@ -930,7 +924,6 @@ def init():
 
     """--------------------------------- Try Where Better ------------------------------------"""
     matchWithTeamAttributes_df = getWhereBetterNew(matchWithTeamAttributes_df, match_Data_DF_copy)
-
 
 
     matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
