@@ -30,7 +30,6 @@ def model_SVM(trainData, testData):
     # X_T = scaler.transform(X_T)
 
 
-
     # making the instance
     model = svm.LinearSVC()
     # learning
@@ -66,8 +65,6 @@ def model_SVM(trainData, testData):
     #     show()
 
 
-
-
 # function that iterates over params and check which is the best
 def calcBestNumOfFolds(clf, X, y, n, test_data, test_label, trainData):
     # var to save max for 2015_2016
@@ -75,8 +72,10 @@ def calcBestNumOfFolds(clf, X, y, n, test_data, test_label, trainData):
     """--------------------------------- Feature Scaling ------------------------------------"""
     scaler = StandardScaler()
     scaler.fit(X)
-    X= scaler.transform(X)
+    X = scaler.transform(X)
     test_data = scaler.transform(test_data)
+
+    X_train_max, X_test_max, y_train_max, y_test_max = 0
 
     kf = KFold(n_splits=n, random_state=None, shuffle=False)
     for train_index, test_index in kf.split(X):
@@ -94,4 +93,4 @@ def calcBestNumOfFolds(clf, X, y, n, test_data, test_label, trainData):
             y_train_max, y_test_max = y[train_index], y[test_index]
 
     print(max_acc)
-    return X_train_max, X_test_max,y_train_max, y_test_max
+    return X_train_max, X_test_max, y_train_max, y_test_max
