@@ -1,5 +1,6 @@
 import sqlite3
 from aifc import Error
+from sklearn.preprocessing import MinMaxScaler
 
 import numpy as np
 import pandas as pd
@@ -51,6 +52,9 @@ def mergeMatchWithTeamAttribute(data_match_df, data_team_attr_df):
     :param data_team_attr_df: The Data about the team and there attributes
     :return: The Data merged with the matches and the attributes of the teams in the match - ** Without Null **
     """
+    # Save the detailed date
+    data_match_df['date_info'] = data_match_df['date']
+
     # Clearing the date from day and month
     data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
     data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
@@ -79,7 +83,7 @@ def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
     :param data_match_df: The Data about the matches
     :param data_team_attr_df: The Data about the team and there attributes
     :return: The Data merged with the matches and the attributes of the teams in the match - With Null
-    """    # Clearing the date from day and month
+    """  # Clearing the date from day and month
     data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
     data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
 
@@ -116,6 +120,8 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     HomeAndAwayTeam_player_attr_mean_df = data_match_players_df[
         ['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
 
+    HomeAndAwayTeam_player_attr_mean_df = data_match_players_df[
+        ['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
     """--------------------------------- *** Moshe *** ------------------------------------"""
 
 
@@ -216,6 +222,7 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
 
 
     return HomeAndAwayTeam_player_attr_mean_df
+
 
 
 
@@ -464,7 +471,81 @@ def dataframe_other_team_goals(data_df):
     return data_df
 
 
+def get_last_matches(match, data_df):
+    x = 15
+    y = 10
+    # Define variables
+    date = match.date_info
+    home_team = match.home_team_api_id
+    away_team = match.away_team_api_id
 
+    # Get last x matches of home and away team
+
+    # Filter team matches from matches
+    home_team_matches = data_df[(data_df['home_team_api_id'] == home_team) | (data_df['away_team_api_id'] == home_team)]
+    home_last_matches = home_team_matches[home_team_matches.date_info < date].sort_values(by='date_info', ascending=False).iloc[0:x, :]
+
+    away_team_matches = data_df[(data_df['away_team_api_id'] == away_team) | (data_df['home_team_api_id'] == away_team)]
+    away_last_matches = away_team_matches[away_team_matches.date_info < date].sort_values(by='date_info', ascending=False).iloc[0:x, :]
+
+    # Create goal variables
+    home_goals = (int(home_last_matches.home_team_goal[home_last_matches.home_team_api_id == home_team].sum()) + int(home_last_matches.away_team_goal[home_last_matches.away_team_api_id == home_team].sum()))
+    away_goals = (int(away_last_matches.home_team_goal[away_last_matches.home_team_api_id == away_team].sum()) + int(away_last_matches.away_team_goal[away_last_matches.away_team_api_id == away_team].sum()))
+    home_goals_conceided = (int(home_last_matches.home_team_goal[home_last_matches.away_team_api_id == home_team].sum()) + int(home_last_matches.away_team_goal[home_last_matches.home_team_api_id == home_team].sum()))
+    away_goals_conceided = (int(away_last_matches.home_team_goal[away_last_matches.away_team_api_id == away_team].sum()) + int(away_last_matches.away_team_goal[away_last_matches.home_team_api_id == away_team].sum()))
+
+
+
+    # Create win variables
+    total_wins_home = int(home_last_matches.home_team_goal[(home_last_matches.home_team_api_id == home_team) & (home_last_matches.home_team_goal > home_last_matches.away_team_goal)].count()) + int(home_last_matches.away_team_goal[(home_last_matches.away_team_api_id == home_team) & (home_last_matches.away_team_goal > home_last_matches.home_team_goal)].count())
+    total_wins_away = int(away_last_matches.home_team_goal[(away_last_matches.home_team_api_id == away_team) & (away_last_matches.home_team_goal > away_last_matches.away_team_goal)].count()) + int(away_last_matches.away_team_goal[(away_last_matches.away_team_api_id == away_team) & (away_last_matches.away_team_goal > away_last_matches.home_team_goal)].count())
+    total_lose_home = int(home_last_matches.home_team_goal[(home_last_matches.home_team_api_id == home_team) & (home_last_matches.home_team_goal < home_last_matches.away_team_goal)].count()) + int(home_last_matches.away_team_goal[(home_last_matches.away_team_api_id == home_team) & (home_last_matches.away_team_goal < home_last_matches.home_team_goal)].count())
+    total_lose_away = int(away_last_matches.home_team_goal[(away_last_matches.home_team_api_id == away_team) & (away_last_matches.home_team_goal < away_last_matches.away_team_goal)].count()) + int(away_last_matches.away_team_goal[(away_last_matches.away_team_api_id == away_team) & (away_last_matches.away_team_goal < away_last_matches.home_team_goal)].count())
+    total_draw_home = int(home_last_matches.home_team_goal[(home_last_matches.home_team_api_id == home_team) & (home_last_matches.home_team_goal == home_last_matches.away_team_goal)].count()) + int(home_last_matches.away_team_goal[(home_last_matches.away_team_api_id == home_team) & (home_last_matches.away_team_goal == home_last_matches.home_team_goal)].count())
+    total_draw_away = int(away_last_matches.home_team_goal[(away_last_matches.home_team_api_id == away_team) & (away_last_matches.home_team_goal == away_last_matches.away_team_goal)].count()) + int(away_last_matches.away_team_goal[(away_last_matches.away_team_api_id == away_team) & (away_last_matches.away_team_goal == away_last_matches.home_team_goal)].count())
+
+
+    # Create variables of 2 given teams
+    home_and_away_matches = data_df[(data_df['home_team_api_id'] == home_team) & (data_df['away_team_api_id'] == away_team)]
+    away_and_home_matches = data_df[(data_df['home_team_api_id'] == away_team) & (data_df['away_team_api_id'] == home_team)]
+    total_home_and_away_matches = pd.concat([home_and_away_matches, away_and_home_matches])
+
+    try:
+        last_home_and_away_matches = total_home_and_away_matches[total_home_and_away_matches.date_info < date].sort_values(by='date_info', ascending=False).iloc[0:y, :]
+    except:
+        last_home_and_away_matches = total_home_and_away_matches[total_home_and_away_matches.date < date].sort_values(by='date_info', ascending=False).iloc[0:total_home_and_away_matches.shape[0], :]
+
+        # Check for error in data
+        if (last_home_and_away_matches.shape[0] > y):
+            print("Error in obtaining matches")
+
+
+    total_wins_home_and_away = int(last_home_and_away_matches.home_team_goal[(last_home_and_away_matches.home_team_api_id == home_team) & (last_home_and_away_matches.home_team_goal > last_home_and_away_matches.away_team_goal)].count()) + int(last_home_and_away_matches.away_team_goal[(last_home_and_away_matches.away_team_api_id == home_team) & (last_home_and_away_matches.away_team_goal > last_home_and_away_matches.home_team_goal)].count())
+    total_wins_away_and_home = int(last_home_and_away_matches.home_team_goal[(last_home_and_away_matches.home_team_api_id == away_team) & (last_home_and_away_matches.home_team_goal > last_home_and_away_matches.away_team_goal)].count()) + int(last_home_and_away_matches.away_team_goal[(last_home_and_away_matches.away_team_api_id == away_team) & (last_home_and_away_matches.away_team_goal > last_home_and_away_matches.home_team_goal)].count())
+
+
+
+    # Define result data frame
+    result = pd.DataFrame()
+
+    # Define ID features
+    result.loc[0, 'match_api_id'] = match.match_api_id
+
+    # Create match features
+    result.loc[0, 'home_team_goals_difference'] = home_goals
+    result.loc[0, 'away_team_goals_difference'] = away_goals
+    result.loc[0, 'home_team_goals_conceided'] = home_goals_conceided
+    result.loc[0, 'games_won_home_team'] = total_wins_home
+    result.loc[0, 'games_won_away_team'] = total_wins_away
+    result.loc[0, 'games_lose_home_team'] = total_lose_home
+    result.loc[0, 'games_draw_home_team'] = total_draw_home
+    result.loc[0, 'games_draw_away_team'] = total_draw_away
+
+    result.loc[0, 'games_against_won'] = total_wins_home_and_away
+    result.loc[0, 'games_against_lost'] = total_wins_away_and_home
+
+    # Return match features
+    return result.loc[0]
 
 def addTeamNames(new_df, data_team):
     """
@@ -511,7 +592,7 @@ def sqlQuery(conn):
     :return: The SQL Data As DataFrames - Match_DF, TeamAttributes_DF, Teams_DF
     """
     data_matchDF = pd.read_sql_query(
-        'SELECT match_api_id,home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match', conn)
+        'SELECT match_api_id, home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match', conn)
 
     data_Team_AttrDF = pd.read_sql_query(
         'SELECT team_api_id,date,buildUpPlaySpeed,buildUpPlayPassing,chanceCreationPassing, chanceCreationCrossing, '
@@ -725,6 +806,8 @@ def clearUnusedFeatures(new_df):
     # del new_df["away_percentAway"]
 
 
+    del new_df["date_info"]
+
     # del new_df["away_whereBetter"]
     # del new_df["home_whereBetter"]
 
@@ -909,7 +992,6 @@ def init():
 
     """--------------------------------- Merging All The DataFrames Into One ------------------------------------"""
 
-
     Players_Attr_avg = dataframe_filter_players(data_matchDF_players, data_Players_AttrDF)
 
     match_Data_DF_copy = match_Data_DF.copy()
@@ -917,7 +999,6 @@ def init():
     matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
 
     """--------------------------------- Adding New Features ------------------------------------"""
-
 
     # Adding Label Result To The Data
     matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
@@ -932,6 +1013,11 @@ def init():
     matchWithTeamAttributes_df = dataframe_attributeTeam_ratio(matchWithTeamAttributes_df)
 
     # matchWithTeamAttributes_df = dataframe_other_team_goals(matchWithTeamAttributes_df)
+    # matchWithTeamAttributes_df = dataframe_other_team_goals(matchWithTeamAttributes_df)
+
+
+    goals_df = matchWithTeamAttributes_df.apply(lambda x: get_last_matches(x, matchWithTeamAttributes_df), axis=1)
+    matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, goals_df, how='left', left_on=['match_api_id'],right_on=['match_api_id'])
 
     # Calculate Where The Team Playing Better
     trainData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
@@ -955,15 +1041,18 @@ def init():
     # testData = resultToCategorical(testData)
     #################################################################################################################################
 
-
     """--------------------------------- Clearing The UnNeeded Features And Converting To Numeric ------------------------------------"""
-
 
     trainData = clearUnusedFeatures(trainData)
     testData = clearUnusedFeatures(testData)
 
     # trainData = DataFrame_Info_String2Numeric(trainData.copy())
     # testData = DataFrame_Info_String2Numeric(testData.copy())
+    # trainData = DataFrame_Info_String2Numeric(trainData.copy())
+    # testData = DataFrame_Info_String2Numeric(testData.copy())
+
+    scaler.fit_transform(trainData.to_numpy())
+    scaler.fit_transform(testData.to_numpy())
 
     cursor.close()
     conn.close()
