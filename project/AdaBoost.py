@@ -57,6 +57,7 @@ def runAdaBoost(trainData, test_15_16):
             calcBestNumOfFolds(clf, X, y, 32, test_data, test_label,trainData)
 
 
+
 #######################################
     # calcBestNumOfFolds(clf,X,y,5,test_data,test_label)
 #######################################
@@ -79,14 +80,14 @@ def calcBestNumOfFolds(clf, X, y, n, test_data, test_label, trainData):
         # start train model
         clf.fit(X_train, y_train)
 
-        # importances = clf.feature_importances_
-        # indices = np.argsort(importances)
-        # features = trainData.columns
-        # plt.title('Feature Importances')
-        # plt.barh(range(len(indices)), importances[indices], color='b', align='center')
-        # plt.yticks(range(len(indices)), [features[i] for i in indices])
-        # plt.xlabel('Relative Importance')
-        # plt.show()
+        importances = clf.feature_importances_
+        indices = np.argsort(importances)
+        features = trainData.columns
+        plt.title('Feature Importances')
+        plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+        plt.yticks(range(len(indices)), [features[i] for i in indices])
+        plt.xlabel('Relative Importance')
+        plt.show()
 
         y_pred_test = clf.predict(test_data)
         acc_test = accuracy_score(test_label, y_pred_test)
@@ -95,7 +96,7 @@ def calcBestNumOfFolds(clf, X, y, n, test_data, test_label, trainData):
             max_acc = acc_test
             X_train_max, X_test_max = X[train_index], X[test_index]
             y_train_max, y_test_max = y[train_index], y[test_index]
-
+        break
     print(max_acc)
 
 

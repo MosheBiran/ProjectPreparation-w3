@@ -11,20 +11,25 @@ from project import AdaBoost, KNearestNeighbors, dataInit, SupportVectorMachine,
 if __name__ == '__main__':
     trainData, testData = dataInit.init()
 
+    print("train Data Size:  " + str(len(trainData)))
+    print("test Data Size:  " + str(len(testData)))
+
     # K - Nearest Neighbors Model:
     # KNearestNeighbors.model_KNN(trainData, testData)
     # KNearestNeighbors.trainWithGridSearchCV(trainData, testData)
 
+    # SVM
+    SupportVectorMachine.model_SVM(trainData, testData)
+
     # dataAnalyze.check_data(trainData)
     # AdaBoost Classifier Model:
-    # AdaBoost.runAdaBoost(trainData, testData)
+    AdaBoost.runAdaBoost(trainData, testData)
 
 
     # GaussianNaiveBayes.naive_bayes_function(trainData, testData)
 
 
 
-    # SVM
-    SupportVectorMachine.model_SVM(trainData, testData)
+
 
 

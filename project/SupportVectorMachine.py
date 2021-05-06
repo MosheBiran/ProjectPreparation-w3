@@ -6,7 +6,7 @@ from sklearn.metrics import confusion_matrix, classification_report, accuracy_sc
 from sklearn.model_selection import train_test_split
 from sklearn import svm
 from sklearn import metrics
-
+from sklearn.preprocessing import StandardScaler
 
 
 def model_SVM(trainData, testData):
@@ -17,6 +17,17 @@ def model_SVM(trainData, testData):
     y_T = testData.iloc[:, len(testData.columns) - 1].values
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
+
+
+    scaler = StandardScaler()
+    scaler.fit(X_train)
+
+    X_train = scaler.transform(X_train)
+    X_test = scaler.transform(X_test)
+
+    X_T = scaler.transform(X_T)
+
+
 
     # making the instance
     model = svm.LinearSVC()
@@ -39,15 +50,15 @@ def model_SVM(trainData, testData):
     print("Training data accuracy is", str(accuracy_score(y_test, prediction)), "%")
     print("\n**************************\n")
 
-    # The SHAP values
-    svm_explainer = shap.KernelExplainer(model.predict, X_T)
-    svm_shap_values = svm_explainer.shap_values(X_T)
-
-    # shap.summary_plot(svm_shap_values, X_T)
-    # show()
-
-    for col in testData:
-        shap.dependence_plot(col, svm_shap_values, X_T)
-        show()
+    # # The SHAP values
+    # svm_explainer = shap.KernelExplainer(model.predict, X_T)
+    # svm_shap_values = svm_explainer.shap_values(X_T)
+    #
+    # # shap.summary_plot(svm_shap_values, X_T)
+    # # show()
+    #
+    # for col in testData:
+    #     shap.dependence_plot(col, svm_shap_values, X_T)
+    #     show()
 
 

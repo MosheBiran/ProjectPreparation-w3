@@ -116,6 +116,17 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     HomeAndAwayTeam_player_attr_mean_df = data_match_players_df[
         ['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
 
+    """--------------------------------- *** Moshe *** ------------------------------------"""
+
+
+    player_attr_df['potential_growth'] = player_attr_df.potential - player_attr_df.overall_rating
+    player_attr_df['overall_rating_bool'] = player_attr_df.apply(lambda x: 1 if x['overall_rating'] > 80 else 0, axis=1)
+    player_attr_df['potential_growth_bool'] = player_attr_df.apply(lambda x: 1 if x['potential_growth'] > 4 else 0,
+                                                                   axis=1)
+
+    """---------------------------------***************------------------------------------"""
+
+
     for col in data_match_players_df.columns:
         if "_player_" in col:
             suffix = ("_home_", "_home_")
@@ -128,6 +139,29 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     # removing all columns that are not relevant.
     data_match_players_df = data_match_players_df.drop(
         [col for col in data_match_players_df.columns if 'player_api_id' in col], axis=1)
+
+    """--------------------------------- *** Moshe *** ------------------------------------"""
+
+
+    """--------------------------------- potential_growth_bool ------------------------------------"""
+
+    # Creating a list of all columns that relevant to that specific team mean.
+    home_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_growth_bool_home_' in col]
+    away_col_mean_lst = [col for col in data_match_players_df.columns if 'potential_growth_bool_away_' in col]
+    HomeAndAwayTeam_player_attr_mean_df['home_potential_growth_bool'] = data_match_players_df[home_col_mean_lst].mean(
+        1)
+
+    """--------------------------------- overall_rating_bool ------------------------------------"""
+
+    # Creating a list of all columns that relevant to that specific team mean.
+    home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_bool_home_' in col]
+    away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_bool_away_' in col]
+    HomeAndAwayTeam_player_attr_mean_df['home_overall_rating_bool'] = data_match_players_df[home_col_mean_lst].mean(
+        1) * 10
+    HomeAndAwayTeam_player_attr_mean_df['away_overall_rating_bool'] = data_match_players_df[away_col_mean_lst].mean(
+        1) * 10
+
+    """---------------------------------***************------------------------------------"""
 
 
     """--------------------------------- Overall Rating ------------------------------------"""
@@ -222,39 +256,134 @@ def dataframe_attributeTeam_ratio(data_df):
 
 
 def dataframe_mean_goals(data_df):
+
+    """--------------------------------- New ------------------------------------"""
+
+
     data_home_df = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
     data_away_df = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
 
-    data_df = pd.merge(data_df, data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
-    data_df = pd.merge(data_df, data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
-
-    # data_df['goals_mean'] = np.floor(data_df['home_team_goal_y'] / data_df['away_team_goal_y'])
-    # del data_df['home_team_goal_y']
-    # del data_df['away_team_goal_y']
-
-    data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
-    data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
-
-    data_df.rename(columns={'home_team_goal_y': 'home_season_team_goal'}, inplace=True)
-    data_df.rename(columns={'away_team_goal_y': 'away_season_team_goal'}, inplace=True)
+    """--------------------------------- Other ------------------------------------"""
 
 
+    data_home_df_other = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
+    data_away_df_other = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
 
-    # home_away_goals = pd.merge(data_home_df, data_away_df, how='outer', left_on=['home_team_api_id'], right_on=['away_team_api_id'])
-    # home_away_goals['goal'] = home_away_goals[['home_team_goal','away_team_goal']].mean(1)
-    # del home_away_goals['away_team_api_id']
-    # del home_away_goals['home_team_goal']
-    # del home_away_goals['away_team_goal']
+    copy_data_home_df_other = data_home_df_other.copy()
+    copy_data_away_df_other = data_away_df_other.copy()
+
+    """--------------------------------------------------------------------------"""
+
+
+    copy_data_home_df = data_home_df.copy()
+    copy_data_away_df = data_away_df.copy()
+    seasons = pd.DataFrame(data_home_df['season'])
+    seasons = seasons.groupby(['season'])
+
+    new_seasons = []
+    old_seasons = []
+    i = 0
+    for x in seasons:
+        if i == 0:
+            i += 1
+            old_seasons.append(x[0])
+            continue
+        new_seasons.append(x[0])
+        old_seasons.append(x[0])
+    old_seasons.pop()
+
+    copy_data_home_df = copy_data_home_df[copy_data_home_df.season != '2015/2016']
+    copy_data_away_df = copy_data_away_df[copy_data_away_df.season != '2015/2016']
+
+    copy_data_home_df = copy_data_home_df.replace(old_seasons, new_seasons)
+    copy_data_away_df = copy_data_away_df.replace(old_seasons, new_seasons)
+
+
+    """--------------------------------- Other ------------------------------------"""
+
+    copy_data_home_df_other = copy_data_home_df_other[copy_data_home_df_other.season != '2015/2016']
+    copy_data_away_df_other = copy_data_away_df_other[copy_data_away_df_other.season != '2015/2016']
+
+    copy_data_home_df_other = copy_data_home_df_other.replace(old_seasons, new_seasons)
+    copy_data_away_df_other = copy_data_away_df_other.replace(old_seasons, new_seasons)
+
+
+    """--------------------------------------------------------------------------"""
+
+
+    home_normalAndOther = pd.merge(copy_data_home_df, copy_data_home_df_other, how='inner', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
+    away_normalAndOther = pd.merge(copy_data_away_df, copy_data_away_df_other, how='inner', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
+
+
+    home_normalAndOther.rename(columns={'home_team_goal': 'home_season_team_goal'}, inplace=True)
+    home_normalAndOther.rename(columns={'away_team_goal': 'away_other_season_team_goal'}, inplace=True)
+
+    away_normalAndOther.rename(columns={'away_team_goal': 'away_season_team_goal'}, inplace=True)
+    away_normalAndOther.rename(columns={'home_team_goal': 'home_other_season_team_goal'}, inplace=True)
+
+
+    data_df = pd.merge(data_df, home_normalAndOther, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
+    data_df = pd.merge(data_df, away_normalAndOther, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
+
+
+    """--------------------------------------------------------------------------"""
+
+
+    # data_df = pd.merge(data_df, copy_data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
+    # data_df = pd.merge(data_df, copy_data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
+
+
+
+    # data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
+    # data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
+
+    # data_df.rename(columns={'home_team_goal_y': 'home_season_team_goal'}, inplace=True)
+    # data_df.rename(columns={'away_team_goal_y': 'away_season_team_goal'}, inplace=True)
+
+    # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
+    data_df = data_df.dropna()
+    # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
+
+
+
+
+
+    """--------------------------------- Origin ------------------------------------"""
     #
-    # data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['home_team_api_id'], right_on=['home_team_api_id'])
-    # data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['away_team_api_id'], right_on=['home_team_api_id'])
-    # data_df['goals_mean'] = data_df['goal_x']/data_df['goal_y']
+    # data_home_df = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
+    # data_away_df = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
     #
-    # data_df.rename(columns={'home_team_api_id_x': 'home_team_api_id'}, inplace=True)
     #
-    # del data_df['goal_x']
-    # del data_df['goal_y']
-    # del data_df['home_team_api_id_y']
+    # data_df = pd.merge(data_df, data_home_df, how='left', left_on=['home_team_api_id', 'season'],
+    #                    right_on=['home_team_api_id', 'season'])
+    # data_df = pd.merge(data_df, data_away_df, how='left', left_on=['away_team_api_id', 'season'],
+    #                    right_on=['away_team_api_id', 'season'])
+    #
+    # # data_df['goals_mean'] = np.floor(data_df['home_team_goal_y'] / data_df['away_team_goal_y'])
+    # # del data_df['home_team_goal_y']
+    # # del data_df['away_team_goal_y']
+    #
+    # data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
+    # data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
+    #
+    # data_df.rename(columns={'home_team_goal_y': 'home_season_team_goal'}, inplace=True)
+    # data_df.rename(columns={'away_team_goal_y': 'away_season_team_goal'}, inplace=True)
+    #
+    # # home_away_goals = pd.merge(data_home_df, data_away_df, how='outer', left_on=['home_team_api_id'], right_on=['away_team_api_id'])
+    # # home_away_goals['goal'] = home_away_goals[['home_team_goal','away_team_goal']].mean(1)
+    # # del home_away_goals['away_team_api_id']
+    # # del home_away_goals['home_team_goal']
+    # # del home_away_goals['away_team_goal']
+    # #
+    # # data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['home_team_api_id'], right_on=['home_team_api_id'])
+    # # data_df = pd.merge(data_df, home_away_goals, how='left', left_on=['away_team_api_id'], right_on=['home_team_api_id'])
+    # # data_df['goals_mean'] = data_df['goal_x']/data_df['goal_y']
+    # #
+    # # data_df.rename(columns={'home_team_api_id_x': 'home_team_api_id'}, inplace=True)
+    # #
+    # # del data_df['goal_x']
+    # # del data_df['goal_y']
+    # # del data_df['home_team_api_id_y']
 
     return data_df
 
@@ -262,11 +391,36 @@ def dataframe_mean_goals(data_df):
 
 def dataframe_other_team_goals(data_df):
 
+    """--------------------------------- New ------------------------------------"""
+
     data_home_df = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
     data_away_df = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
 
-    data_df = pd.merge(data_df, data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
-    data_df = pd.merge(data_df, data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
+    copy_data_home_df = data_home_df.copy()
+    copy_data_away_df = data_away_df.copy()
+    seasons = pd.DataFrame(data_home_df['season'])
+    seasons = seasons.groupby(['season'])
+
+    new_seasons = []
+    old_seasons = []
+    i = 0
+    for x in seasons:
+        if i == 0:
+            i += 1
+            old_seasons.append(x[0])
+            continue
+        new_seasons.append(x[0])
+        old_seasons.append(x[0])
+    old_seasons.pop()
+
+    copy_data_home_df = copy_data_home_df[copy_data_home_df.season != '2015/2016']
+    copy_data_away_df = copy_data_away_df[copy_data_away_df.season != '2015/2016']
+
+    copy_data_home_df = copy_data_home_df.replace(old_seasons, new_seasons)
+    copy_data_away_df = copy_data_away_df.replace(old_seasons, new_seasons)
+
+    data_df = pd.merge(data_df, copy_data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
+    data_df = pd.merge(data_df, copy_data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
 
     # data_df['goals_mean'] = np.floor(data_df['home_team_goal_y'] / data_df['away_team_goal_y'])
     # del data_df['home_team_goal_y']
@@ -277,6 +431,36 @@ def dataframe_other_team_goals(data_df):
 
     data_df.rename(columns={'home_team_goal_y': 'home_other_season_team_goal'}, inplace=True)
     data_df.rename(columns={'away_team_goal_y': 'away_other_season_team_goal'}, inplace=True)
+
+    # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
+    data_df = data_df.dropna()
+    # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
+
+
+
+
+
+    """--------------------------------- Origin ------------------------------------"""
+
+
+    # data_home_df = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
+    # data_away_df = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
+    #
+    # data_df = pd.merge(data_df, data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
+    # data_df = pd.merge(data_df, data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
+    #
+    # # data_df['goals_mean'] = np.floor(data_df['home_team_goal_y'] / data_df['away_team_goal_y'])
+    # # del data_df['home_team_goal_y']
+    # # del data_df['away_team_goal_y']
+    #
+    # data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
+    # data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
+    #
+    # data_df.rename(columns={'home_team_goal_y': 'home_other_season_team_goal'}, inplace=True)
+    # data_df.rename(columns={'away_team_goal_y': 'away_other_season_team_goal'}, inplace=True)
+
+
+
     return data_df
 
 
@@ -327,7 +511,7 @@ def sqlQuery(conn):
     :return: The SQL Data As DataFrames - Match_DF, TeamAttributes_DF, Teams_DF
     """
     data_matchDF = pd.read_sql_query(
-        'SELECT home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match', conn)
+        'SELECT match_api_id,home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match', conn)
 
     data_Team_AttrDF = pd.read_sql_query(
         'SELECT team_api_id,date,buildUpPlaySpeed,buildUpPlayPassing,chanceCreationPassing, chanceCreationCrossing, '
@@ -406,6 +590,79 @@ def getWhereBetterHomeOrAway(new_df_with_name):
     return df_percent_wim
 
 
+
+def getWhereBetterNew(new_df_with_name, match_Data_DF):
+
+    new_df_with_name = pd.merge(new_df_with_name, match_Data_DF, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'match_api_id'],
+                                right_on=['home_team_api_id', 'away_team_api_id', 'season', 'match_api_id'])
+
+
+    match_sorted_by_home = new_df_with_name.sort_values(by=['home_team_api_id', 'date_y'])
+    match_sorted_by_home = match_sorted_by_home[['home_team_api_id', 'date_y', 'result', 'match_api_id']]
+
+    match_sorted_by_away = new_df_with_name.sort_values(by=['away_team_api_id', 'date_y'])
+    match_sorted_by_away = match_sorted_by_away[['away_team_api_id', 'date_y', 'result', 'match_api_id']]
+
+
+    """--------------------------------- Home Team - Win Home Present ------------------------------------"""
+
+
+    match_sorted_by_home.insert(len(match_sorted_by_home.columns), 'percentHome', match_sorted_by_home['result'].astype(float))
+    inxOfCol = len(match_sorted_by_home.columns) - 1
+
+    homePresent = findWhereBetter(match_sorted_by_home, inxOfCol)
+
+
+    """--------------------------------- Away Team - Win Away Present ------------------------------------"""
+
+
+    match_sorted_by_away.insert(len(match_sorted_by_away.columns), 'percentAway', match_sorted_by_away['result'].astype(float))
+    inxOfCol = len(match_sorted_by_away.columns) - 1
+
+    awayPresent = findWhereBetter(match_sorted_by_away, inxOfCol)
+
+
+    new_df_with_name = pd.merge(new_df_with_name, homePresent, how='inner', right_on=['home_team_api_id', 'match_api_id'], left_on=['home_team_api_id', 'match_api_id'])
+    new_df_with_name = pd.merge(new_df_with_name, awayPresent, how='inner', right_on=['away_team_api_id', 'match_api_id'], left_on=['away_team_api_id', 'match_api_id'])
+
+    del new_df_with_name['date_y']
+    del new_df_with_name['home_team_goal_y']
+    del new_df_with_name['away_team_goal_y']
+    new_df_with_name.rename(columns={'date_x': 'date'}, inplace=True)
+    new_df_with_name.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
+    new_df_with_name.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
+
+
+    return new_df_with_name
+
+
+def findWhereBetter(match_sorted_WB, inxOfCol):
+
+    i = 0
+    startIndex = 0
+    counterOfWins = 0
+    teamID = 0
+    while i < len(match_sorted_WB):
+        if match_sorted_WB.iloc[i, 0] != teamID:
+            teamID = match_sorted_WB.iloc[i, 0]
+            startIndex = i
+            counterOfWins = 0
+            if match_sorted_WB.iloc[i, 2] == 2:
+                counterOfWins += 1
+            match_sorted_WB.iat[i, inxOfCol] = 0.33
+
+        else:
+            match_sorted_WB.iat[i, inxOfCol] = counterOfWins / (i - startIndex)
+            if match_sorted_WB.iloc[i, 2] == 2:
+                counterOfWins += 1
+        i += 1
+
+    del match_sorted_WB['result']
+    del match_sorted_WB['date_y']
+
+    return match_sorted_WB
+
+
 def addingResultFeature(new_df):
     """
     Add Result Label For Each Game - According To The Home Team
@@ -461,19 +718,41 @@ def clearUnusedFeatures(new_df):
     del new_df["date"]
     del new_df["home_team_api_id"]
     del new_df["away_team_api_id"]
-    del new_df["home_percentHome"]
-    del new_df["home_percentAway"]
-    del new_df["away_percentHome"]
-    del new_df["away_percentAway"]
+    del new_df['match_api_id']
+    # del new_df["home_percentHome"]
+    # del new_df["home_percentAway"]
+    # del new_df["away_percentHome"]
+    # del new_df["away_percentAway"]
 
 
-    del new_df["away_whereBetter"]
-    del new_df["home_whereBetter"]
+    # del new_df["away_whereBetter"]
+    # del new_df["home_whereBetter"]
 
-    del new_df["home_season_team_goal"]
-    del new_df["away_season_team_goal"]
-    del new_df["home_other_season_team_goal"]
-    del new_df["away_other_season_team_goal"]
+    # del new_df["home_season_team_goal"]
+    # del new_df["away_season_team_goal"]
+    # del new_df["home_other_season_team_goal"]
+    # del new_df["away_other_season_team_goal"]
+
+    # new_df = new_df.drop(["away_team_api_id", "home_team_api_id", "date", "season", "away_team_goal", "home_team_goal",
+    #                       'home_season_team_goal', 'away_season_team_goal', 'away_whereBetter',
+    #                       'away_other_season_team_goal', 'home_other_season_team_goal', 'home_percentHome',
+    #                       'home_percentAway', 'home_whereBetter', 'away_percentHome', 'away_percentAway'
+    #                       # ,'home_player_pot_mean'
+    #                       # , 'away_player_pot_mean',
+    #                       # ,'home_player_free_kick_mean'
+    #                       # , 'away_player_free_kick_mean',
+    #                       # , 'home_player_shot_power_mean'
+    #                       # , 'away_player_shot_power_mean'
+    #                       # ,'buildUpPlaySpeed'
+    #                       # , 'buildUpPlayPassing'
+    #                       # , 'chanceCreationPassing'
+    #                       # ,'chanceCreationCrossing'
+    #                       # , 'chanceCreationShooting'
+    #                       # , 'defencePressure'
+    #                       # ,'defenceAggression'
+    #                       # , 'defenceTeamWidth'
+    #                       ], axis=1)
+
 
 
 
@@ -490,7 +769,7 @@ def margeWhereBetterWithMainData(df_2012_2013_2014_before, df_15_16_before):
     :param df_15_16_before: The Dataframe Of "whereBetter"
     :return: The Main Dataframe With The Feature "whereBetter"  - Train, Test
     """
-    df_percent_win_12_13_14 = getWhereBetterHomeOrAway(df_2012_2013_2014_before)
+    df_percent_win_12_13_14 = getWhereBetterHomeOrAway(df_2012_2013_2014_before) # TODO: Remember To Active Back
     df_percent_win_15_16 = getWhereBetterHomeOrAway(df_15_16_before)
 
     df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before, df_percent_win_12_13_14, how='inner',
@@ -631,13 +910,15 @@ def init():
 
 
     # TODO : Try Add 5 Past Games Goal
-    match_Data_DF = addLastMatchesGoals(match_Data_DF)
+    # match_Data_DF = addLastMatchesGoals(match_Data_DF)
 
 
     """--------------------------------- Merging All The DataFrames Into One ------------------------------------"""
 
 
     Players_Attr_avg = dataframe_filter_players(data_matchDF_players, data_Players_AttrDF)
+
+    match_Data_DF_copy = match_Data_DF.copy()
 
     matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
 
@@ -647,19 +928,33 @@ def init():
     # Adding Label Result To The Data
     matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
 
+    """--------------------------------- Try Where Better ------------------------------------"""
+    matchWithTeamAttributes_df = getWhereBetterNew(matchWithTeamAttributes_df, match_Data_DF_copy)
+
+
+
     matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
     matchWithTeamAttributes_df = dataframe_mean_goals(matchWithTeamAttributes_df)
 
     matchWithTeamAttributes_df = dataframe_attributeTeam_ratio(matchWithTeamAttributes_df)
 
-    matchWithTeamAttributes_df = dataframe_other_team_goals(matchWithTeamAttributes_df)
+    # matchWithTeamAttributes_df = dataframe_other_team_goals(matchWithTeamAttributes_df)
 
     # Calculate Where The Team Playing Better
     trainData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
     testData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2015/2016"]))]
 
     # Merging WhereBetter With Main Data
-    trainData, testData = margeWhereBetterWithMainData(trainData_before_WB, testData_before_WB)
+    # trainData, testData = margeWhereBetterWithMainData(trainData_before_WB, testData_before_WB)
+
+
+    # trainData_WB = getWhereBetterHomeOrAway(trainData_before_WB)
+    # testData_WB = getWhereBetterHomeOrAway(testData_before_WB)
+
+
+    trainData = remove_x_y(trainData_before_WB)
+    testData = remove_x_y(testData_before_WB)
+
 
     #################################################################################################################################
     # # Convert Class Result To Categorical  # TODO: Not Need For Categorical
@@ -674,8 +969,8 @@ def init():
     trainData = clearUnusedFeatures(trainData)
     testData = clearUnusedFeatures(testData)
 
-    trainData = DataFrame_Info_String2Numeric(trainData.copy())
-    testData = DataFrame_Info_String2Numeric(testData.copy())
+    # trainData = DataFrame_Info_String2Numeric(trainData.copy())
+    # testData = DataFrame_Info_String2Numeric(testData.copy())
 
     cursor.close()
     conn.close()
