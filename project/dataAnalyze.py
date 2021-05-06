@@ -15,17 +15,18 @@ def check_data(df):
     # Frequency distribution for non-numerical attributes
     for col in df:
         print(df[col].value_counts())
-        df[col].hist()
+        p = df[col].hist()
+        p.title.set_text(col)
         show()
 
-        temp3 = pd.crosstab(df[col], df['Result'])
-        temp3.plot(kind='bar', stacked=True, color=['red', 'blue', 'green'], grid=False)
-        show()
+        # temp3 = pd.crosstab(df[col], df['Result'])
+        # temp3.plot(kind='bar', stacked=True, color=['red', 'blue', 'green'], grid=False)
+        # show()
 
 
 
 
-    print(df.describe())
+    # print(df.describe())
     # print(df.apply(lambda x: sum(x.isnull()), axis=0))
 
     # df['home_team_goal'].hist()

@@ -3,6 +3,7 @@ from project import AdaBoost, KNearestNeighbors, dataInit, SupportVectorMachine,
 if __name__ == '__main__':
     trainData, testData = dataInit.init()
 
+    print(trainData.columns)
     # dataAnalyze.check_data(trainData)
 
     print("train Data Size:  " + str(len(trainData)))

@@ -102,6 +102,7 @@ def init():
     return trainData, testData
 
 
+
 def create_connection(db_file):
     """ create a database connection to the SQLite database
         specified by the db_file
@@ -200,6 +201,24 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):  # TODO : C
     data_match_players_df = data_match_players_df.drop(
         [col for col in data_match_players_df.columns if 'player_api_id' in col], axis=1)
 
+
+
+    """--------------------------------- Overall Rating ------------------------------------"""
+
+
+    # Creating a list of all columns that relevant to that specific team mean.
+    home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
+    away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
+    HomeAndAwayTeam_player_attr_mean_df['home_player_overall_rating_mean'] = data_match_players_df[home_col_mean_lst].mean(
+        1) / 100
+    HomeAndAwayTeam_player_attr_mean_df['away_player_overall_rating_mean'] = data_match_players_df[away_col_mean_lst].mean(
+        1) / 100
+
+    # Ratio
+    # HomeAndAwayTeam_player_attr_mean_df['players_rating'] = data_match_players_df[home_col_mean_lst].mean(1) / data_match_players_df[away_col_mean_lst].mean(1)
+
+
+
     """--------------------------------- *** Moshe *** ------------------------------------"""
 
 
@@ -222,23 +241,6 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):  # TODO : C
     #     1) * 10
     #
     """---------------------------------***************------------------------------------"""
-
-
-    """--------------------------------- Overall Rating ------------------------------------"""
-
-
-    # Creating a list of all columns that relevant to that specific team mean.
-    home_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_home_' in col]
-    away_col_mean_lst = [col for col in data_match_players_df.columns if 'overall_rating_away_' in col]
-    HomeAndAwayTeam_player_attr_mean_df['home_player_attr_mean'] = data_match_players_df[home_col_mean_lst].mean(
-        1) / 100
-    HomeAndAwayTeam_player_attr_mean_df['away_player_attr_mean'] = data_match_players_df[away_col_mean_lst].mean(
-        1) / 100
-
-    # HomeAndAwayTeam_player_attr_mean_df['players_rating'] = data_match_players_df[home_col_mean_lst].mean(1) / data_match_players_df[away_col_mean_lst].mean(1)
-
-
-    # HomeAndAwayTeam_player_attr_mean_df['players_rating'] = data_match_players_df[home_col_mean_lst].mean(1) / data_match_players_df[away_col_mean_lst].mean(1)
 
     """--------------------------------- All Other Features ------------------------------------"""
     """-------------------------------- mixed ------------------------------------"""
@@ -484,14 +486,30 @@ def addingResultFeature(dataBeforeResult):
     :param dataBeforeResult: The Dataframe With The Matches Information
     :return:The Data After Adding The Label "Result"
     """
+
+    """---------------------------------* Win - Lose *------------------------------------"""
+
+
     # Adding a column of binary representation win loss and draw.
     conditions = [dataBeforeResult["home_team_goal"] > dataBeforeResult["away_team_goal"],
-                  dataBeforeResult["home_team_goal"] < dataBeforeResult["away_team_goal"],
-                  dataBeforeResult["home_team_goal"] == dataBeforeResult["away_team_goal"]]
+                  dataBeforeResult["home_team_goal"] <= dataBeforeResult["away_team_goal"]]
 
-    choices = [2, 0, 1]
+    choices = [2, 0]
     dataBeforeResult["result"] = np.select(conditions, choices, default=np.nan)
     dataBeforeResult["result"] = dataBeforeResult["result"].astype(int)
+
+
+    """---------------------------------* Win - Draw - Lose *------------------------------------"""
+
+
+    # Adding a column of binary representation win loss and draw.
+    # conditions = [dataBeforeResult["home_team_goal"] > dataBeforeResult["away_team_goal"],
+    #               dataBeforeResult["home_team_goal"] < dataBeforeResult["away_team_goal"],
+    #               dataBeforeResult["home_team_goal"] == dataBeforeResult["away_team_goal"]]
+    #
+    # choices = [2, 0, 1]
+    # dataBeforeResult["result"] = np.select(conditions, choices, default=np.nan)
+    # dataBeforeResult["result"] = dataBeforeResult["result"].astype(int)
 
     return dataBeforeResult
 
@@ -1107,7 +1125,7 @@ def addLastMatchesGoals(match_Data_DF):
 
 
 
-def calculateHomeOrAwayGoals(sortedHomeOrAway, inxOfCol, home_away, gamesBack=4):
+def calculateHomeOrAwayGoals(sortedHomeOrAway, inxOfCol, home_away, gamesBack=3):
     """
     Help Function - Calculating the Number Of Goals In The Last 'gamesBack' Games Per Team
     :param sortedHomeOrAway: The DataFrame With The Team Games - Sorted By TeamID And Date
