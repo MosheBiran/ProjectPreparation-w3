@@ -118,6 +118,7 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
 
     HomeAndAwayTeam_player_attr_mean_df = data_match_players_df[
         ['home_team_api_id', 'away_team_api_id', 'season', 'date']].copy()
+
     """--------------------------------- *** Moshe *** ------------------------------------"""
 
 
@@ -163,8 +164,8 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     # HomeAndAwayTeam_player_attr_mean_df['away_overall_rating_bool'] = data_match_players_df[away_col_mean_lst].mean(
     #     1) * 10
     #
-    # """---------------------------------***************------------------------------------"""
-    #
+    """---------------------------------***************------------------------------------"""
+
 
     """--------------------------------- Overall Rating ------------------------------------"""
 
@@ -183,7 +184,7 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     # HomeAndAwayTeam_player_attr_mean_df['players_rating'] = data_match_players_df[home_col_mean_lst].mean(1) / data_match_players_df[away_col_mean_lst].mean(1)
 
     """--------------------------------- All Other Features ------------------------------------"""
-    """------------------ mixed ------------------"""
+    """-------------------------------- mixed ------------------------------------"""
     # home_col_mean_lst = [
     #                     col for col in data_match_players_df.columns
     #                      if 'potential_home_' in col or 'free_kick_accuracy_home_' in col or 'gk_kicking_home_' in col
@@ -1312,41 +1313,3 @@ def init():
     return trainData, testData
 
 
-
-# def temp():
-#     database = path + "database.sqlite"
-#
-#     # create a database connection
-#     conn = create_connection(database)
-#     cursor = conn.cursor()
-#
-#     data_matchDF = pd.read_sql_query(
-#         'SELECT home_team_api_id,away_team_api_id, shoton from Match', conn)
-#
-#     print(data_matchDF.apply(lambda x: sum(x.isnull()), axis=0))
-#
-#     for x in data_matchDF['shoton']:
-#         if x is None:
-#             continue
-#         root = ET.XML(x)  # Parse XML
-#
-#         data = []
-#         cols = []
-#         flag = 0
-#         for i, child in enumerate(root.iter()):
-#             print(child.tag)
-#             if child.tag == 'shoton':
-#                 flag += 1
-#
-#             if flag <= 1:
-#                 cols.append(child.tag)
-#
-#             for subchild in child:
-#                 data.append(subchild.text)
-#
-#         df = pd.DataFrame(data).T  # Write in DF and transpose it
-#         df.columns = cols  # Update column names
-#         print(df)
-#
-#     cursor.close()
-#     conn.close()
