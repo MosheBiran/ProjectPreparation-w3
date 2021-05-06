@@ -137,39 +137,62 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
 
 
 def dataframe_attributeTeam_ratio(data_df):
-    data_df['buildUpPlaySpeed'] = data_df['buildUpPlaySpeed_x'] / data_df['buildUpPlaySpeed_y']
+    data_df['overall_home_team__rating'] = data_df.loc[:, 'buildUpPlayPassing_x':'defenceTeamWidth_x'].mean(axis=1)
+    data_df['overall_away_team_rating'] = data_df.loc[:, 'buildUpPlayPassing_y':'defenceTeamWidth_y'].mean(axis=1)
     del data_df['buildUpPlaySpeed_x']
     del data_df['buildUpPlaySpeed_y']
-
-    data_df['buildUpPlayPassing'] = data_df['buildUpPlayPassing_x'] / data_df['buildUpPlayPassing_y']
     del data_df['buildUpPlayPassing_x']
     del data_df['buildUpPlayPassing_y']
-
-    data_df['chanceCreationPassing'] = data_df['chanceCreationPassing_x'] / data_df['chanceCreationPassing_y']
     del data_df['chanceCreationPassing_x']
     del data_df['chanceCreationPassing_y']
-
-    data_df['chanceCreationCrossing'] = data_df['chanceCreationCrossing_x'] / data_df['chanceCreationCrossing_y']
     del data_df['chanceCreationCrossing_x']
     del data_df['chanceCreationCrossing_y']
-
-    data_df['chanceCreationShooting'] = data_df['chanceCreationShooting_x'] / data_df['chanceCreationShooting_y']
     del data_df['chanceCreationShooting_x']
     del data_df['chanceCreationShooting_y']
-
-    data_df['defencePressure'] = data_df['defencePressure_x'] / data_df['defencePressure_y']
     del data_df['defencePressure_x']
     del data_df['defencePressure_y']
-
-    data_df['defenceAggression'] = data_df['defenceAggression_x'] / data_df['defenceAggression_y']
     del data_df['defenceAggression_x']
     del data_df['defenceAggression_y']
-
-    data_df['defenceTeamWidth'] = data_df['defenceTeamWidth_x'] / data_df['defenceTeamWidth_y']
     del data_df['defenceTeamWidth_x']
     del data_df['defenceTeamWidth_y']
 
     return data_df
+
+
+# def dataframe_attributeTeam_ratio(data_df):
+#     data_df['buildUpPlaySpeed'] = data_df['buildUpPlaySpeed_x'] / data_df['buildUpPlaySpeed_y']
+#     del data_df['buildUpPlaySpeed_x']
+#     del data_df['buildUpPlaySpeed_y']
+#
+#     data_df['buildUpPlayPassing'] = data_df['buildUpPlayPassing_x'] / data_df['buildUpPlayPassing_y']
+#     del data_df['buildUpPlayPassing_x']
+#     del data_df['buildUpPlayPassing_y']
+#
+#     data_df['chanceCreationPassing'] = data_df['chanceCreationPassing_x'] / data_df['chanceCreationPassing_y']
+#     del data_df['chanceCreationPassing_x']
+#     del data_df['chanceCreationPassing_y']
+#
+#     data_df['chanceCreationCrossing'] = data_df['chanceCreationCrossing_x'] / data_df['chanceCreationCrossing_y']
+#     del data_df['chanceCreationCrossing_x']
+#     del data_df['chanceCreationCrossing_y']
+#
+#     data_df['chanceCreationShooting'] = data_df['chanceCreationShooting_x'] / data_df['chanceCreationShooting_y']
+#     del data_df['chanceCreationShooting_x']
+#     del data_df['chanceCreationShooting_y']
+#
+#     data_df['defencePressure'] = data_df['defencePressure_x'] / data_df['defencePressure_y']
+#     del data_df['defencePressure_x']
+#     del data_df['defencePressure_y']
+#
+#     data_df['defenceAggression'] = data_df['defenceAggression_x'] / data_df['defenceAggression_y']
+#     del data_df['defenceAggression_x']
+#     del data_df['defenceAggression_y']
+#
+#     data_df['defenceTeamWidth'] = data_df['defenceTeamWidth_x'] / data_df['defenceTeamWidth_y']
+#     del data_df['defenceTeamWidth_x']
+#     del data_df['defenceTeamWidth_y']
+#
+#     return data_df
 
 
 def dataframe_mean_goals(data_df):
@@ -243,47 +266,81 @@ def get_last_matches(match, data_df):
 
     # Filter team matches from matches
     home_team_matches = data_df[(data_df['home_team_api_id'] == home_team) | (data_df['away_team_api_id'] == home_team)]
-    home_last_matches = home_team_matches[home_team_matches.date_info < date].sort_values(by='date_info', ascending=False).iloc[0:x, :]
+    home_last_matches = home_team_matches[home_team_matches.date_info < date].sort_values(by='date_info',
+                                                                                          ascending=False).iloc[0:x, :]
 
     away_team_matches = data_df[(data_df['away_team_api_id'] == away_team) | (data_df['home_team_api_id'] == away_team)]
-    away_last_matches = away_team_matches[away_team_matches.date_info < date].sort_values(by='date_info', ascending=False).iloc[0:x, :]
+    away_last_matches = away_team_matches[away_team_matches.date_info < date].sort_values(by='date_info',
+                                                                                          ascending=False).iloc[0:x, :]
 
     # Create goal variables
-    home_goals = (int(home_last_matches.home_team_goal[home_last_matches.home_team_api_id == home_team].sum()) + int(home_last_matches.away_team_goal[home_last_matches.away_team_api_id == home_team].sum()))
-    away_goals = (int(away_last_matches.home_team_goal[away_last_matches.home_team_api_id == away_team].sum()) + int(away_last_matches.away_team_goal[away_last_matches.away_team_api_id == away_team].sum()))
-    home_goals_conceided = (int(home_last_matches.home_team_goal[home_last_matches.away_team_api_id == home_team].sum()) + int(home_last_matches.away_team_goal[home_last_matches.home_team_api_id == home_team].sum()))
-    away_goals_conceided = (int(away_last_matches.home_team_goal[away_last_matches.away_team_api_id == away_team].sum()) + int(away_last_matches.away_team_goal[away_last_matches.home_team_api_id == away_team].sum()))
-
-
+    home_goals = (int(home_last_matches.home_team_goal[home_last_matches.home_team_api_id == home_team].sum()) + int(
+        home_last_matches.away_team_goal[home_last_matches.away_team_api_id == home_team].sum()))
+    away_goals = (int(away_last_matches.home_team_goal[away_last_matches.home_team_api_id == away_team].sum()) + int(
+        away_last_matches.away_team_goal[away_last_matches.away_team_api_id == away_team].sum()))
+    home_goals_conceided = (
+                int(home_last_matches.home_team_goal[home_last_matches.away_team_api_id == home_team].sum()) + int(
+            home_last_matches.away_team_goal[home_last_matches.home_team_api_id == home_team].sum()))
+    away_goals_conceided = (
+                int(away_last_matches.home_team_goal[away_last_matches.away_team_api_id == away_team].sum()) + int(
+            away_last_matches.away_team_goal[away_last_matches.home_team_api_id == away_team].sum()))
 
     # Create win variables
-    total_wins_home = int(home_last_matches.home_team_goal[(home_last_matches.home_team_api_id == home_team) & (home_last_matches.home_team_goal > home_last_matches.away_team_goal)].count()) + int(home_last_matches.away_team_goal[(home_last_matches.away_team_api_id == home_team) & (home_last_matches.away_team_goal > home_last_matches.home_team_goal)].count())
-    total_wins_away = int(away_last_matches.home_team_goal[(away_last_matches.home_team_api_id == away_team) & (away_last_matches.home_team_goal > away_last_matches.away_team_goal)].count()) + int(away_last_matches.away_team_goal[(away_last_matches.away_team_api_id == away_team) & (away_last_matches.away_team_goal > away_last_matches.home_team_goal)].count())
-    total_lose_home = int(home_last_matches.home_team_goal[(home_last_matches.home_team_api_id == home_team) & (home_last_matches.home_team_goal < home_last_matches.away_team_goal)].count()) + int(home_last_matches.away_team_goal[(home_last_matches.away_team_api_id == home_team) & (home_last_matches.away_team_goal < home_last_matches.home_team_goal)].count())
-    total_lose_away = int(away_last_matches.home_team_goal[(away_last_matches.home_team_api_id == away_team) & (away_last_matches.home_team_goal < away_last_matches.away_team_goal)].count()) + int(away_last_matches.away_team_goal[(away_last_matches.away_team_api_id == away_team) & (away_last_matches.away_team_goal < away_last_matches.home_team_goal)].count())
-    total_draw_home = int(home_last_matches.home_team_goal[(home_last_matches.home_team_api_id == home_team) & (home_last_matches.home_team_goal == home_last_matches.away_team_goal)].count()) + int(home_last_matches.away_team_goal[(home_last_matches.away_team_api_id == home_team) & (home_last_matches.away_team_goal == home_last_matches.home_team_goal)].count())
-    total_draw_away = int(away_last_matches.home_team_goal[(away_last_matches.home_team_api_id == away_team) & (away_last_matches.home_team_goal == away_last_matches.away_team_goal)].count()) + int(away_last_matches.away_team_goal[(away_last_matches.away_team_api_id == away_team) & (away_last_matches.away_team_goal == away_last_matches.home_team_goal)].count())
-
+    total_wins_home = int(home_last_matches.home_team_goal[(home_last_matches.home_team_api_id == home_team) & (
+                home_last_matches.home_team_goal > home_last_matches.away_team_goal)].count()) + int(
+        home_last_matches.away_team_goal[(home_last_matches.away_team_api_id == home_team) & (
+                    home_last_matches.away_team_goal > home_last_matches.home_team_goal)].count())
+    total_wins_away = int(away_last_matches.home_team_goal[(away_last_matches.home_team_api_id == away_team) & (
+                away_last_matches.home_team_goal > away_last_matches.away_team_goal)].count()) + int(
+        away_last_matches.away_team_goal[(away_last_matches.away_team_api_id == away_team) & (
+                    away_last_matches.away_team_goal > away_last_matches.home_team_goal)].count())
+    total_lose_home = int(home_last_matches.home_team_goal[(home_last_matches.home_team_api_id == home_team) & (
+                home_last_matches.home_team_goal < home_last_matches.away_team_goal)].count()) + int(
+        home_last_matches.away_team_goal[(home_last_matches.away_team_api_id == home_team) & (
+                    home_last_matches.away_team_goal < home_last_matches.home_team_goal)].count())
+    total_lose_away = int(away_last_matches.home_team_goal[(away_last_matches.home_team_api_id == away_team) & (
+                away_last_matches.home_team_goal < away_last_matches.away_team_goal)].count()) + int(
+        away_last_matches.away_team_goal[(away_last_matches.away_team_api_id == away_team) & (
+                    away_last_matches.away_team_goal < away_last_matches.home_team_goal)].count())
+    total_draw_home = int(home_last_matches.home_team_goal[(home_last_matches.home_team_api_id == home_team) & (
+                home_last_matches.home_team_goal == home_last_matches.away_team_goal)].count()) + int(
+        home_last_matches.away_team_goal[(home_last_matches.away_team_api_id == home_team) & (
+                    home_last_matches.away_team_goal == home_last_matches.home_team_goal)].count())
+    total_draw_away = int(away_last_matches.home_team_goal[(away_last_matches.home_team_api_id == away_team) & (
+                away_last_matches.home_team_goal == away_last_matches.away_team_goal)].count()) + int(
+        away_last_matches.away_team_goal[(away_last_matches.away_team_api_id == away_team) & (
+                    away_last_matches.away_team_goal == away_last_matches.home_team_goal)].count())
 
     # Create variables of 2 given teams
-    home_and_away_matches = data_df[(data_df['home_team_api_id'] == home_team) & (data_df['away_team_api_id'] == away_team)]
-    away_and_home_matches = data_df[(data_df['home_team_api_id'] == away_team) & (data_df['away_team_api_id'] == home_team)]
+    home_and_away_matches = data_df[
+        (data_df['home_team_api_id'] == home_team) & (data_df['away_team_api_id'] == away_team)]
+    away_and_home_matches = data_df[
+        (data_df['home_team_api_id'] == away_team) & (data_df['away_team_api_id'] == home_team)]
     total_home_and_away_matches = pd.concat([home_and_away_matches, away_and_home_matches])
 
     try:
-        last_home_and_away_matches = total_home_and_away_matches[total_home_and_away_matches.date_info < date].sort_values(by='date_info', ascending=False).iloc[0:y, :]
+        last_home_and_away_matches = total_home_and_away_matches[
+                                         total_home_and_away_matches.date_info < date].sort_values(by='date_info',
+                                                                                                   ascending=False).iloc[
+                                     0:y, :]
     except:
-        last_home_and_away_matches = total_home_and_away_matches[total_home_and_away_matches.date < date].sort_values(by='date_info', ascending=False).iloc[0:total_home_and_away_matches.shape[0], :]
+        last_home_and_away_matches = total_home_and_away_matches[total_home_and_away_matches.date < date].sort_values(
+            by='date_info', ascending=False).iloc[0:total_home_and_away_matches.shape[0], :]
 
         # Check for error in data
         if (last_home_and_away_matches.shape[0] > y):
             print("Error in obtaining matches")
 
-
-    total_wins_home_and_away = int(last_home_and_away_matches.home_team_goal[(last_home_and_away_matches.home_team_api_id == home_team) & (last_home_and_away_matches.home_team_goal > last_home_and_away_matches.away_team_goal)].count()) + int(last_home_and_away_matches.away_team_goal[(last_home_and_away_matches.away_team_api_id == home_team) & (last_home_and_away_matches.away_team_goal > last_home_and_away_matches.home_team_goal)].count())
-    total_wins_away_and_home = int(last_home_and_away_matches.home_team_goal[(last_home_and_away_matches.home_team_api_id == away_team) & (last_home_and_away_matches.home_team_goal > last_home_and_away_matches.away_team_goal)].count()) + int(last_home_and_away_matches.away_team_goal[(last_home_and_away_matches.away_team_api_id == away_team) & (last_home_and_away_matches.away_team_goal > last_home_and_away_matches.home_team_goal)].count())
-
-
+    total_wins_home_and_away = int(last_home_and_away_matches.home_team_goal[
+                                       (last_home_and_away_matches.home_team_api_id == home_team) & (
+                                                   last_home_and_away_matches.home_team_goal > last_home_and_away_matches.away_team_goal)].count()) + int(
+        last_home_and_away_matches.away_team_goal[(last_home_and_away_matches.away_team_api_id == home_team) & (
+                    last_home_and_away_matches.away_team_goal > last_home_and_away_matches.home_team_goal)].count())
+    total_wins_away_and_home = int(last_home_and_away_matches.home_team_goal[
+                                       (last_home_and_away_matches.home_team_api_id == away_team) & (
+                                                   last_home_and_away_matches.home_team_goal > last_home_and_away_matches.away_team_goal)].count()) + int(
+        last_home_and_away_matches.away_team_goal[(last_home_and_away_matches.away_team_api_id == away_team) & (
+                    last_home_and_away_matches.away_team_goal > last_home_and_away_matches.home_team_goal)].count())
 
     # Define result data frame
     result = pd.DataFrame()
@@ -353,7 +410,8 @@ def sqlQuery(conn):
     :return: The SQL Data As DataFrames - Match_DF, TeamAttributes_DF, Teams_DF
     """
     data_matchDF = pd.read_sql_query(
-        'SELECT match_api_id, home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match', conn)
+        'SELECT match_api_id, home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match',
+        conn)
 
     data_Team_AttrDF = pd.read_sql_query(
         'SELECT team_api_id,date,buildUpPlaySpeed,buildUpPlayPassing,chanceCreationPassing, chanceCreationCrossing, '
@@ -579,9 +637,9 @@ def init():
 
     # matchWithTeamAttributes_df = dataframe_other_team_goals(matchWithTeamAttributes_df)
 
-
-    goals_df = matchWithTeamAttributes_df.apply(lambda x: get_last_matches(x, matchWithTeamAttributes_df), axis=1)
-    matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, goals_df, how='left', left_on=['match_api_id'],right_on=['match_api_id'])
+    # goals_df = matchWithTeamAttributes_df.apply(lambda x: get_last_matches(x, matchWithTeamAttributes_df), axis=1)
+    # matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, goals_df, how='left', left_on=['match_api_id'],
+    #                                       right_on=['match_api_id'])
 
     # Calculate Where The Team Playing Better
     trainData_before_WB = matchWithTeamAttributes_df.loc[
