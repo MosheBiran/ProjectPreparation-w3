@@ -1,3 +1,5 @@
+import time
+
 import pip
 import shap
 import matplotlib.pyplot as plt
@@ -7,6 +9,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold,GridSearchCV
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.preprocessing import StandardScaler
 
 """
 where we took AdaBoost from:
@@ -19,19 +22,6 @@ https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClass
 
 
 def runAdaBoost(trainData, test_15_16):
-    # trainData = trainData.drop(['home_buildUpPlaySpeedClass', 'home_buildUpPlayDribblingClass',
-    #                 'home_buildUpPlayPassingClass', 'home_buildUpPlayPositioningClass',
-    #                 'home_defencePressureClass', 'home_defenceAggressionClass',
-    #                 'away_buildUpPlaySpeedClass', 'away_buildUpPlayDribblingClass',
-    #                 'away_buildUpPlayPassingClass', 'away_buildUpPlayPositioningClass',
-    #                 'away_defencePressureClass', 'away_defenceAggressionClass'], axis=1)
-    #
-    # test_15_16 = test_15_16.drop(['home_buildUpPlaySpeedClass', 'home_buildUpPlayDribblingClass',
-    #                 'home_buildUpPlayPassingClass', 'home_buildUpPlayPositioningClass',
-    #                 'home_defencePressureClass', 'home_defenceAggressionClass',
-    #                 'away_buildUpPlaySpeedClass', 'away_buildUpPlayDribblingClass',
-    #                 'away_buildUpPlayPassingClass', 'away_buildUpPlayPositioningClass',
-    #                 'away_defencePressureClass', 'away_defenceAggressionClass'], axis=1)
 
 
     # split trainData to features
@@ -51,10 +41,11 @@ def runAdaBoost(trainData, test_15_16):
     n_trees = [100]
     k_fold = [i for i in range(2, 35)]
     for n in n_trees:
-        for k in k_fold:
-            print(k)
-            clf = AdaBoostClassifier(n_estimators=n, random_state=0)
-            calcBestNumOfFolds(clf, X, y, 32, test_data, test_label,trainData)
+        # for k in k_fold:
+        #     print(k)
+        start=time.time()
+        clf = AdaBoostClassifier(n_estimators=n, random_state=0)
+        calcBestNumOfFolds(clf, X, y, 32, test_data, test_label,trainData)
 
 
 #######################################
