@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import shap
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import show
@@ -19,7 +20,7 @@ def model_SVM(trainData, testData):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
 
     # making the instance
-    model = svm.SVC(random_state=123)
+    model = svm.LinearSVC()
     # learning
     model.fit(X_train, y_train)
     # Prediction
@@ -39,15 +40,8 @@ def model_SVM(trainData, testData):
     print("Training data accuracy is", str(accuracy_score(y_test, prediction)), "%")
     print("\n**************************\n")
 
-    # The SHAP values
-    svm_explainer = shap.KernelExplainer(model.predict, X_T)
-    svm_shap_values = svm_explainer.shap_values(X_T)
 
-    # shap.summary_plot(svm_shap_values, X_T)
-    # show()
 
-    for col in testData:
-        shap.dependence_plot(col, svm_shap_values, X_T)
-        show()
+
 
 

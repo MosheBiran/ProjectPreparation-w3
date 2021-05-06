@@ -1,3 +1,4 @@
+import pandas as pd
 import pip
 import shap
 import matplotlib.pyplot as plt
@@ -16,19 +17,9 @@ https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.AdaBoostClass
 
 # main function to run AdaBoost algorithm
 def runAdaBoost(trainData, test_15_16):
-    # trainData = trainData.drop(['home_buildUpPlaySpeedClass', 'home_buildUpPlayDribblingClass',
-    #                 'home_buildUpPlayPassingClass', 'home_buildUpPlayPositioningClass',
-    #                 'home_defencePressureClass', 'home_defenceAggressionClass',
-    #                 'away_buildUpPlaySpeedClass', 'away_buildUpPlayDribblingClass',
-    #                 'away_buildUpPlayPassingClass', 'away_buildUpPlayPositioningClass',
-    #                 'away_defencePressureClass', 'away_defenceAggressionClass'], axis=1)
+    # trainData = trainData.drop(['chanceCreationPassing', 'chanceCreationCrossing', 'chanceCreationShooting', 'defenceTeamWidth'], axis=1)
     #
-    # test_15_16 = test_15_16.drop(['home_buildUpPlaySpeedClass', 'home_buildUpPlayDribblingClass',
-    #                 'home_buildUpPlayPassingClass', 'home_buildUpPlayPositioningClass',
-    #                 'home_defencePressureClass', 'home_defenceAggressionClass',
-    #                 'away_buildUpPlaySpeedClass', 'away_buildUpPlayDribblingClass',
-    #                 'away_buildUpPlayPassingClass', 'away_buildUpPlayPositioningClass',
-    #                 'away_defencePressureClass', 'away_defenceAggressionClass'], axis=1)
+    # test_15_16 = test_15_16.drop(['chanceCreationPassing', 'chanceCreationCrossing', 'chanceCreationShooting', 'defenceTeamWidth'], axis=1)
 
 
     # split trainData to features
@@ -105,14 +96,14 @@ def calcBestNumOfFolds(clf,X,y,n,test_data,test_label,trainData):
         # start train model
         clf.fit(X_train, y_train)
 
-        # importances = clf.feature_importances_
-        # indices = np.argsort(importances)
-        # features = trainData.columns
-        # plt.title('Feature Importances')
-        # plt.barh(range(len(indices)), importances[indices], color='b', align='center')
-        # plt.yticks(range(len(indices)), [features[i] for i in indices])
-        # plt.xlabel('Relative Importance')
-        # plt.show()
+        importances = clf.feature_importances_
+        indices = np.argsort(importances)
+        features = trainData.columns
+        plt.title('Feature Importances')
+        plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+        plt.yticks(range(len(indices)), [features[i] for i in indices])
+        plt.xlabel('Relative Importance')
+        plt.show()
 
         y_pred_test = clf.predict(test_data)
         acc_test = accuracy_score(test_label, y_pred_test)
@@ -121,6 +112,7 @@ def calcBestNumOfFolds(clf,X,y,n,test_data,test_label,trainData):
             max_acc = acc_test
             X_train_max, X_test_max = X[train_index], X[test_index]
             y_train_max, y_test_max = y[train_index], y[test_index]
+        break
 
     print(max_acc)
 
