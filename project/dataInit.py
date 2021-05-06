@@ -9,7 +9,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from sklearn import preprocessing
 
-path = "C:\\Users\\Daniel\\Downloads\\archive\\"
+path = "C:\\Users\\liadn\\Downloads\\"
 
 scaler = MinMaxScaler()
 
