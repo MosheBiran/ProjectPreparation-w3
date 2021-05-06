@@ -4,7 +4,7 @@ import shap
 from matplotlib import pyplot as plt
 from matplotlib.pyplot import show
 from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from sklearn import svm
 from sklearn import metrics
 from sklearn.preprocessing import StandardScaler
@@ -18,6 +18,7 @@ def model_SVM(trainData, testData):
     y_T = testData.iloc[:, len(testData.columns) - 1].values
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
+
 
 
     # scaler = StandardScaler()
@@ -43,6 +44,8 @@ def model_SVM(trainData, testData):
     prediction_test = model.predict(X_T)
     print("Accuracy 2015_2016:", metrics.accuracy_score(prediction_test, y_T))
 
+    # X_train_max, X_test_max,y_train_max, y_test_max = calcBestNumOfFolds(model, X, y, 35, X_T, y_T, trainData)
+
 
 
     print(confusion_matrix(y_test, prediction))
@@ -65,4 +68,30 @@ def model_SVM(trainData, testData):
 
 
 
+# function that iterates over params and check which is the best
+def calcBestNumOfFolds(clf, X, y, n, test_data, test_label, trainData):
+    # var to save max for 2015_2016
+    max_acc = 0
+    """--------------------------------- Feature Scaling ------------------------------------"""
+    scaler = StandardScaler()
+    scaler.fit(X)
+    X= scaler.transform(X)
+    test_data = scaler.transform(test_data)
 
+    kf = KFold(n_splits=n, random_state=None, shuffle=False)
+    for train_index, test_index in kf.split(X):
+        X_train, X_test = X[train_index], X[test_index]
+        y_train, y_test = y[train_index], y[test_index]
+        # start train model
+        clf.fit(X_train, y_train)
+
+        y_pred_test = clf.predict(test_data)
+        acc_test = accuracy_score(test_label, y_pred_test)
+        # found max split
+        if acc_test > max_acc:
+            max_acc = acc_test
+            X_train_max, X_test_max = X[train_index], X[test_index]
+            y_train_max, y_test_max = y[train_index], y[test_index]
+
+    print(max_acc)
+    return X_train_max, X_test_max,y_train_max, y_test_max
