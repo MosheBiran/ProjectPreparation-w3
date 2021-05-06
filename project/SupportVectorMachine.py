@@ -57,11 +57,6 @@ def model_SVM(trainData, testData):
     print("\n**************************\n")
 
 
-    # print(classification_report(y_test, prediction))
-    # print("\n**************************\n")
-    # print("Training data accuracy is", str(accuracy_score(y_test, prediction)), "%")
-    # print("\n**************************\n")
-
     # # The SHAP values
     # svm_explainer = shap.KernelExplainer(model.predict, X_T)
     # svm_shap_values = svm_explainer.shap_values(X_T)
