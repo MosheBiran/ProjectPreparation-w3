@@ -321,15 +321,6 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     #     HomeAndAwayTeam_player_attr_mean_df['away_player_long_passing_mean'] = data_match_players_df[away_col_mean_lst].mean(
     #         1) / 100
     #
-    # """------------------penalties-------------------"""
-    # if list_of_fields[12] == True:
-    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'penalties_home_' in col]
-    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'penalties_away_' in col]
-    #     HomeAndAwayTeam_player_attr_mean_df['home_player_penalties_mean'] = data_match_players_df[home_col_mean_lst].mean(
-    #         1) / 100
-    #     HomeAndAwayTeam_player_attr_mean_df['away_player_penalties_mean'] = data_match_players_df[away_col_mean_lst].mean(
-    #         1) / 100
-    #
     # """------------------ball_control-------------------"""
     # if list_of_fields[13] == True:
     #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'ball_control_home_' in col]
@@ -366,15 +357,6 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
     #     HomeAndAwayTeam_player_attr_mean_df['away_player_sprint_speed_mean'] = data_match_players_df[away_col_mean_lst].mean(
     #         1) / 100
     #
-    # """------------------agility-------------------"""
-    # if list_of_fields[17] == True:
-    #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'agility_home_' in col]
-    #     away_col_mean_lst = [col for col in data_match_players_df.columns if 'agility_away_' in col]
-    #     HomeAndAwayTeam_player_attr_mean_df['home_player_agility_mean'] = data_match_players_df[home_col_mean_lst].mean(
-    #         1) / 100
-    #     HomeAndAwayTeam_player_attr_mean_df['away_player_agility_mean'] = data_match_players_df[away_col_mean_lst].mean(
-    #         1) / 100
-    #
     # """------------------aggression-------------------"""
     # if list_of_fields[18] == True:
     #     home_col_mean_lst = [col for col in data_match_players_df.columns if 'aggression_home_' in col]
@@ -407,7 +389,7 @@ def dataframe_attributeTeam_ratio(data_df):
     """--------------------------------- New ------------------------------------"""
 
     data_df['overall_home_team_rating'] = data_df.loc[:, 'buildUpPlaySpeed_x':'defenceTeamWidth_x'].mean(axis=1)\
-                                          /data_df.loc[:, 'buildUpPlaySpeed_y':'defenceTeamWidth_y'].mean(axis=1)
+                                          / data_df.loc[:, 'buildUpPlaySpeed_y':'defenceTeamWidth_y'].mean(axis=1)
     # data_df['overall_away_team_rating'] = data_df.loc[:, 'buildUpPlaySpeed_y':'defenceTeamWidth_y'].mean(axis=1)
 
     if 'buildUpPlaySpeed_x' in data_df:
