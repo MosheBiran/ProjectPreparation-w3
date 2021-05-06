@@ -14,6 +14,94 @@ path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 scaler = MinMaxScaler()
 
 
+
+def init():
+    """
+    The Init And Building The Data From The Model Training And Testing
+    :return: The Train Data , Test Data
+    """
+
+    """--------------------------------- SQL Connection And Queries ------------------------------------"""
+
+    database = path + "database.sqlite"
+
+    # create a database connection
+    conn = create_connection(database)
+    cursor = conn.cursor()
+
+    # create DF
+    match_Data_DF, team_Attr_Data_DF, teams_Data_DF, players_Data_Attr_DF, match_Players_Data_DF = sqlQuery(conn)
+
+
+    # # TODO : Check If We Need - Play With The backGames
+    # match_Data_DF = addLastMatchesGoals(match_Data_DF)
+
+
+    """--------------------------------- Merging All The DataFrames Into One ------------------------------------"""
+
+    Players_Attr_avg = dataframe_filter_players(match_Players_Data_DF, players_Data_Attr_DF)
+
+    match_Data_DF_copy = match_Data_DF.copy()
+
+    matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
+
+    """--------------------------------- Adding New Features ------------------------------------"""
+
+    # Label : Result Of The Match Per The Home Team
+    matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
+
+    # Feature : Winning Percentage Past Games
+    matchWithTeamAttributes_df = addWinPresentInLastGames(matchWithTeamAttributes_df, match_Data_DF_copy)
+
+    # Merging Data  # TODO : Check where Put This
+    matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
+
+    # Feature : Mean Goals In The Last Season
+    matchWithTeamAttributes_df = AddMeanGoalsLastSeason(matchWithTeamAttributes_df)
+
+    # Feature : Team Attributes Ratio -> Home \ Away
+    matchWithTeamAttributes_df = addTeamAttribute_Ratio(matchWithTeamAttributes_df)
+
+
+    """--------------------------------- Shahar Function ------------------------------------"""
+
+    # goals_df = matchWithTeamAttributes_df.apply(lambda x: get_last_matches(x, matchWithTeamAttributes_df), axis=1)
+    # matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, goals_df, how='left', left_on=['match_api_id'], right_on=['match_api_id'])
+
+    """--------------------------------------------------------------------------------------"""
+
+    """--------------------------------- Splitting The Data  ------------------------------------"""
+
+    # Season For The Model Train
+    trainData_before_Rename_Col = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
+
+    # Season 2015/2016 For Testing The Model
+    testData_before_Rename_Col = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2015/2016"]))]
+
+    """--------------------------------- Final Clearing And Organize Of The Data ------------------------------------"""
+
+    # Rename The Features  - _x -> home | _y -> away
+    trainData = remove_x_y(trainData_before_Rename_Col)
+    testData = remove_x_y(testData_before_Rename_Col)
+
+    # Deleting The UnNeeded Features
+    trainData = clearUnusedFeatures(trainData)
+    testData = clearUnusedFeatures(testData)
+
+    # # Converting The Values Into Numbers
+    # trainData = convertValuesStringToInt(trainData.copy())
+    # testData = convertValuesStringToInt(testData.copy())
+
+    # # Fit And Transform The Data
+    # scaler.fit_transform(trainData.to_numpy())
+    # scaler.fit_transform(testData.to_numpy())
+
+    cursor.close()
+    conn.close()
+
+    return trainData, testData
+
+
 def create_connection(db_file):
     """ create a database connection to the SQLite database
         specified by the db_file
@@ -29,76 +117,45 @@ def create_connection(db_file):
     return conn
 
 
-def save2CSV(database_after_clean, file_path):
+
+def sqlQuery(conn):
     """
-    Save The Database As CSV File
-    :param database_after_clean: The data that we want to save in CSV
-    :param file_path: The Path where we want to save the database as CSV
+    The SQL Queries For Getting The Data From The SQL Database
+    :param conn: The Connection
+    :return: The SQL Data As DataFrames - Match_DF, TeamAttributes_DF, Teams_DF
     """
-    database_after_clean.to_csv(file_path + "database_after_clean.csv")
+    data_matchDF = pd.read_sql_query(
+        'SELECT match_api_id, home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match', conn)
+
+    data_Team_AttrDF = pd.read_sql_query(
+        'SELECT team_api_id,date,buildUpPlaySpeed,buildUpPlayPassing,chanceCreationPassing, chanceCreationCrossing, '
+        'chanceCreationShooting, defencePressure,defenceAggression, defenceTeamWidth from Team_Attributes',
+        conn)
+
+    data_Team = pd.read_sql_query('SELECT team_api_id, team_long_name from Team', conn)
+
+    # data_Players_AttrDF = pd.read_sql_query(
+    #     'SELECT player_api_id,date,overall_rating from Player_Attributes',
+    #     conn)
+    # data_Players_AttrDF = pd.read_sql_query(
+    #     'SELECT player_api_id,date,overall_rating,potential,free_kick_accuracy,gk_kicking,shot_power from Player_Attributes',
+    #     conn)
+    data_Players_AttrDF = pd.read_sql_query(
+        'SELECT player_api_id,date,overall_rating,potential,free_kick_accuracy,gk_kicking,shot_power,crossing,finishing,heading_accuracy,short_passing,volleys,dribbling,curve,long_passing,ball_control,acceleration,positioning,sprint_speed,aggression,long_shots from Player_Attributes',
+        conn)
+
+    data_matchDF_players = pd.read_sql_query(
+        'SELECT home_team_api_id,away_team_api_id,season,date, home_player_1, home_player_2, home_player_3, '
+        'home_player_4, home_player_5, home_player_6, home_player_7, home_player_8, '
+        'home_player_9, home_player_10, home_player_11 , away_player_1, away_player_2, away_player_3, away_player_4, '
+        'away_player_5, away_player_6, away_player_7, away_player_8, away_player_9, away_player_10, away_player_11 '
+        'from '
+        'Match', conn)
+    return data_matchDF, data_Team_AttrDF, data_Team, data_Players_AttrDF, data_matchDF_players
 
 
-def mergeMatchWithTeamAttribute(data_match_df, data_team_attr_df):
-    """
-    Merging The Data Of:
-    -The Matches With
-    -The Data Attributes Of Each Team Playing in Each Match
-    ** Without Null **
-    :param data_match_df: The Data about the matches
-    :param data_team_attr_df: The Data about the team and there attributes
-    :return: The Data merged with the matches and the attributes of the teams in the match - ** Without Null **
-    """
-    # Save the detailed date
-    data_match_df['date_info'] = data_match_df['date']
 
-    # Clearing the date from day and month
-    data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
-    data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
-
-    # sorting by relevant col
-    data_matchDF = data_match_df.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
-    data_Team_AttrDF = data_team_attr_df.sort_values(by=['team_api_id', 'date'])
-
-    # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
-    new_df_inner = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=['date', 'home_team_api_id'],
-                            right_on=['date', 'team_api_id'])
-    new_df_inner = pd.merge(new_df_inner, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
-                            right_on=['date', 'team_api_id'])
-
-    new_df_inner = new_df_inner.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
-
-    return new_df_inner
-
-
-def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
-    """
-    Merging The Data Of:
-    -The Matches With
-    -The Data Attributes Of Each Team Playing in Each Match
-    ** With Null **
-    :param data_match_df: The Data about the matches
-    :param data_team_attr_df: The Data about the team and there attributes
-    :return: The Data merged with the matches and the attributes of the teams in the match - With Null
-    """  # Clearing the date from day and month
-    data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
-    data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
-
-    # sorting by relevant col
-    data_matchDF = data_match_df.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
-    data_Team_AttrDF = data_team_attr_df.sort_values(by=['team_api_id', 'date'])
-
-    # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
-    new_df_outer = pd.merge(data_matchDF, data_Team_AttrDF, how='outer', left_on=['date', 'home_team_api_id'],
-                            right_on=['date', 'team_api_id'])
-    new_df_outer = pd.merge(new_df_outer, data_Team_AttrDF, how='outer', left_on=['date', 'away_team_api_id'],
-                            right_on=['date', 'team_api_id'])
-
-    new_df_outer = new_df_outer.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
-
-    return new_df_outer
-
-
-def dataframe_filter_players(data_match_players_df, player_attr_df):
+def dataframe_filter_players(data_match_players_df, player_attr_df):  # TODO : Change Name
     """
     :param data_match_players_df:Another frame containing player ID and that player attributes
     :param player_attr_df:data frame containing all  matches between 2 teams include  the season and date they play against each other
@@ -383,86 +440,203 @@ def dataframe_filter_players(data_match_players_df, player_attr_df):
 
 
 
+def mergeMatchWithTeamAttribute(data_match_df, data_team_attr_df):
+    """
+    Merging The Data Of:
+    -The Matches With
+    -The Data Attributes Of Each Team Playing in Each Match
+    ** Without Null **
+    :param data_match_df: The Data about the matches
+    :param data_team_attr_df: The Data about the team and there attributes
+    :return: The Data merged with the matches and the attributes of the teams in the match - ** Without Null **
+    """
+    # Save the detailed date
+    data_match_df['date_info'] = data_match_df['date']
 
-def dataframe_attributeTeam_ratio(data_df):
+    # Clearing the date from day and month
+    data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
+    data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
 
-    """--------------------------------- New ------------------------------------"""
+    # sorting by relevant col
+    data_matchDF = data_match_df.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
+    data_Team_AttrDF = data_team_attr_df.sort_values(by=['team_api_id', 'date'])
 
-    data_df['overall_home_team_rating'] = data_df.loc[:, 'buildUpPlaySpeed_x':'defenceTeamWidth_x'].mean(axis=1)\
-                                          / data_df.loc[:, 'buildUpPlaySpeed_y':'defenceTeamWidth_y'].mean(axis=1)
-    # data_df['overall_away_team_rating'] = data_df.loc[:, 'buildUpPlaySpeed_y':'defenceTeamWidth_y'].mean(axis=1)
+    # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
+    new_df_inner = pd.merge(data_matchDF, data_Team_AttrDF, how='inner', left_on=['date', 'home_team_api_id'],
+                            right_on=['date', 'team_api_id'])
+    new_df_inner = pd.merge(new_df_inner, data_Team_AttrDF, how='inner', left_on=['date', 'away_team_api_id'],
+                            right_on=['date', 'team_api_id'])
 
-    if 'buildUpPlaySpeed_x' in data_df:
-        del data_df['buildUpPlaySpeed_x']
-    if 'buildUpPlaySpeed_y' in data_df:
-        del data_df['buildUpPlaySpeed_y']
-    if 'buildUpPlayPassing_x' in data_df:
-        del data_df['buildUpPlayPassing_x']
-    if 'buildUpPlayPassing_y' in data_df:
-        del data_df['buildUpPlayPassing_y']
-    if 'chanceCreationPassing_x' in data_df:
-        del data_df['chanceCreationPassing_x']
-    if 'chanceCreationPassing_y' in data_df:
-        del data_df['chanceCreationPassing_y']
-    if 'chanceCreationCrossing_x' in data_df:
-        del data_df['chanceCreationCrossing_x']
-    if 'chanceCreationCrossing_y' in data_df:
-        del data_df['chanceCreationCrossing_y']
-    if 'chanceCreationShooting_x' in data_df:
-        del data_df['chanceCreationShooting_x']
-    if 'chanceCreationShooting_y' in data_df:
-        del data_df['chanceCreationShooting_y']
-    if 'defencePressure_x' in data_df:
-        del data_df['defencePressure_x']
-    if 'defencePressure_y' in data_df:
-        del data_df['defencePressure_y']
-    if 'defenceAggression_x' in data_df:
-        del data_df['defenceAggression_x']
-    if 'defenceAggression_y' in data_df:
-        del data_df['defenceAggression_y']
-    if 'defenceTeamWidth_x' in data_df:
-        del data_df['defenceTeamWidth_x']
-    if 'defenceTeamWidth_y' in data_df:
-        del data_df['defenceTeamWidth_y']
+    new_df_inner = new_df_inner.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
 
-    """--------------------------------- Origin ------------------------------------"""
-
-    # data_df['buildUpPlaySpeed'] = data_df['buildUpPlaySpeed_x']/data_df['buildUpPlaySpeed_y']
-    # del data_df['buildUpPlaySpeed_x']
-    # del data_df['buildUpPlaySpeed_y']
-    #
-    # data_df['buildUpPlayPassing'] = data_df['buildUpPlayPassing_x']/data_df['buildUpPlayPassing_y']
-    # del data_df['buildUpPlayPassing_x']
-    # del data_df['buildUpPlayPassing_y']
-    #
-    # data_df['chanceCreationPassing'] = data_df['chanceCreationPassing_x']/data_df['chanceCreationPassing_y']
-    # del data_df['chanceCreationPassing_x']
-    # del data_df['chanceCreationPassing_y']
-    #
-    # data_df['chanceCreationCrossing'] = data_df['chanceCreationCrossing_x']/data_df['chanceCreationCrossing_y']
-    # del data_df['chanceCreationCrossing_x']
-    # del data_df['chanceCreationCrossing_y']
-    #
-    # data_df['chanceCreationShooting'] = data_df['chanceCreationShooting_x']/data_df['chanceCreationShooting_y']
-    # del data_df['chanceCreationShooting_x']
-    # del data_df['chanceCreationShooting_y']
-    #
-    # data_df['defencePressure'] = data_df['defencePressure_x']/data_df['defencePressure_y']
-    # del data_df['defencePressure_x']
-    # del data_df['defencePressure_y']
-    #
-    # data_df['defenceAggression'] = data_df['defenceAggression_x']/data_df['defenceAggression_y']
-    # del data_df['defenceAggression_x']
-    # del data_df['defenceAggression_y']
-    #
-    # data_df['defenceTeamWidth'] = data_df['defenceTeamWidth_x']/data_df['defenceTeamWidth_y']
-    # del data_df['defenceTeamWidth_x']
-    # del data_df['defenceTeamWidth_y']
-
-    return data_df
+    return new_df_inner
 
 
-def dataframe_mean_goals(data_df):
+
+
+def addingResultFeature(dataBeforeResult):
+    """
+    Add Result Label For Each Game - According To The Home Team
+    "home_team_goals" - "away_team_goals" =
+     2 = Win
+     1 = Draw
+     0 = Lose
+    :param dataBeforeResult: The Dataframe With The Matches Information
+    :return:The Data After Adding The Label "Result"
+    """
+    # Adding a column of binary representation win loss and draw.
+    conditions = [dataBeforeResult["home_team_goal"] > dataBeforeResult["away_team_goal"],
+                  dataBeforeResult["home_team_goal"] < dataBeforeResult["away_team_goal"],
+                  dataBeforeResult["home_team_goal"] == dataBeforeResult["away_team_goal"]]
+
+    choices = [2, 0, 1]
+    dataBeforeResult["result"] = np.select(conditions, choices, default=np.nan)
+    dataBeforeResult["result"] = dataBeforeResult["result"].astype(int)
+
+    return dataBeforeResult
+
+
+
+def addWinPresentInLastGames(dataBeforeFeature, match_Data_DF):
+    """
+    Add New Feature - The Percentage Of Wins In The Past Games For Each Team In Match
+    :param dataBeforeFeature: The DataFrame With All Matches Information But The Full Date
+    :param match_Data_DF: The Original DataFrame Of The Matches - With The Full Date - For Merge
+    :return: The DataFrame - Matches With The New Feature For Each Team
+    """
+
+    """--------------------------------- Preparing The Data Before Calculating ------------------------------------"""
+
+    dataBeforeFeature = pd.merge(dataBeforeFeature, match_Data_DF, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'match_api_id'],
+                                 right_on=['home_team_api_id', 'away_team_api_id', 'season', 'match_api_id'])
+
+
+    match_sorted_by_home = dataBeforeFeature.sort_values(by=['home_team_api_id', 'date_y'])
+    match_sorted_by_home = match_sorted_by_home[['home_team_api_id', 'date_y', 'result', 'match_api_id']]
+
+    match_sorted_by_away = dataBeforeFeature.sort_values(by=['away_team_api_id', 'date_y'])
+    match_sorted_by_away = match_sorted_by_away[['away_team_api_id', 'date_y', 'result', 'match_api_id']]
+
+
+    """--------------------------------- Home Team - Win Home Present ------------------------------------"""
+
+
+    match_sorted_by_home.insert(len(match_sorted_by_home.columns), 'percentWinHome', match_sorted_by_home['result'].astype(float))
+    inxOfWins = len(match_sorted_by_home.columns) - 1
+
+    dataWithHomePresent = calculateWinPresent(match_sorted_by_home, inxOfWins)
+
+
+    """--------------------------------- Away Team - Win Away Present ------------------------------------"""
+
+
+    match_sorted_by_away.insert(len(match_sorted_by_away.columns), 'percentWinAway', match_sorted_by_away['result'].astype(float))
+    inxOfWins = len(match_sorted_by_away.columns) - 1
+
+    dataWithAwayPresent = calculateWinPresent(match_sorted_by_away, inxOfWins)
+
+    """--------------------------------- Merging The Data With The New Feature ------------------------------------"""
+
+    dataBeforeFeature = pd.merge(dataBeforeFeature, dataWithHomePresent, how='inner', right_on=['home_team_api_id', 'match_api_id'], left_on=['home_team_api_id', 'match_api_id'])
+    dataBeforeFeature = pd.merge(dataBeforeFeature, dataWithAwayPresent, how='inner', right_on=['away_team_api_id', 'match_api_id'], left_on=['away_team_api_id', 'match_api_id'])
+
+
+    """--------------------------------- Delete And Rename Features Names ------------------------------------"""
+
+    if 'date_y' in dataBeforeFeature:
+        del dataBeforeFeature['date_y']
+    if 'home_team_goal_y' in dataBeforeFeature:
+        del dataBeforeFeature['home_team_goal_y']
+    if 'away_team_goal_y' in dataBeforeFeature:
+        del dataBeforeFeature['away_team_goal_y']
+
+    dataBeforeFeature.rename(columns={'date_x': 'date'}, inplace=True)
+    dataBeforeFeature.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
+    dataBeforeFeature.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
+
+
+    return dataBeforeFeature
+
+
+
+"""-------------*** Help Function ***-------------"""
+
+
+def calculateWinPresent(matches_sortedBy_HorA, inxOfWins):
+    """
+    Help Function - Calculating The Win Percentage For Each Team In The Last Matches
+    :param matches_sortedBy_HorA: The DataFrame Of The Matches - Sorted By: HomeID / AwayID And Date
+    :param inxOfWins: Index Of The New Feature
+    :return: The DataFrame With The Past Games Win Percentage
+    """
+    home_away = ''
+    # TODO : variables Shahar - Draw and Lose Percentage
+    if 'home_team_api_id' in matches_sortedBy_HorA:
+        home_away = 'Home'
+    elif 'away_team_api_id' in matches_sortedBy_HorA:
+        home_away = 'Away'
+
+    # TODO - If We Add Draw
+    # matches_sortedBy_HorA.insert(len(matches_sortedBy_HorA.columns), 'percentDraws' + home_away, matches_sortedBy_HorA['result'].astype(float))
+    # inxOfDraws = len(matches_sortedBy_HorA.columns) - 1
+    # counterOfDraws = 0
+
+    matches_sortedBy_HorA.insert(len(matches_sortedBy_HorA.columns), 'percentLoses' + home_away, matches_sortedBy_HorA['result'].astype(float))
+    inxOfLoses = len(matches_sortedBy_HorA.columns) - 1
+    counterOfLoses = 0
+
+
+    """------------------------------------------------------"""
+    i = 0
+    startIndex = 0
+    counterOfWins = 0
+    teamID = 0
+    while i < len(matches_sortedBy_HorA):
+        # Moved To a New TeamID - Reboot All Variables
+        if matches_sortedBy_HorA.iloc[i, 0] != teamID:
+            teamID = matches_sortedBy_HorA.iloc[i, 0]
+            startIndex = i
+            counterOfWins = 0
+            """-------** Shahar **-------"""
+            # counterOfDraws = 0
+            counterOfLoses = 0
+            if matches_sortedBy_HorA.iloc[i, 2] == 2:
+                counterOfWins += 1
+            # elif matches_sortedBy_HorA.iloc[i, 2] == 1:
+            #     counterOfDraws += 1
+            elif matches_sortedBy_HorA.iloc[i, 2] == 0:
+                counterOfLoses += 1
+            matches_sortedBy_HorA.iat[i, inxOfWins] = 0.33
+            # matches_sortedBy_HorA.iat[i, inxOfDraws] = 0.33
+            matches_sortedBy_HorA.iat[i, inxOfLoses] = 0.33
+
+        else:
+            matches_sortedBy_HorA.iat[i, inxOfWins] = counterOfWins / (i - startIndex)
+            """-------** Shahar **-------"""
+            # matches_sortedBy_HorA.iat[i, inxOfDraws] = counterOfDraws / (i - startIndex)
+            matches_sortedBy_HorA.iat[i, inxOfLoses] = counterOfLoses / (i - startIndex)
+            if matches_sortedBy_HorA.iloc[i, 2] == 2:
+                counterOfWins += 1
+                """-------** Shahar **-------"""
+            # elif matches_sortedBy_HorA.iloc[i, 2] == 1:
+            #     counterOfDraws += 1
+            elif matches_sortedBy_HorA.iloc[i, 2] == 0:
+                counterOfLoses += 1
+        i += 1
+
+    # Delete No Needed Features
+    if 'result' in matches_sortedBy_HorA:
+        del matches_sortedBy_HorA['result']
+    if 'date_y' in matches_sortedBy_HorA:
+        del matches_sortedBy_HorA['date_y']
+
+    return matches_sortedBy_HorA
+
+
+
+
+
+def AddMeanGoalsLastSeason(data_df):
 
     """--------------------------------- New ------------------------------------"""
 
@@ -475,6 +649,10 @@ def dataframe_mean_goals(data_df):
 
     data_home_df_other = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
     data_away_df_other = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
+
+    # TODO : Does is Helps?
+    # data_home_df_other['away_team_goal'] = data_home_df_other['away_team_goal']*(-1)
+    # data_away_df_other['home_team_goal'] = data_away_df_other['home_team_goal']*(-1)
 
     copy_data_home_df_other = data_home_df_other.copy()
     copy_data_away_df_other = data_away_df_other.copy()
@@ -543,19 +721,36 @@ def dataframe_mean_goals(data_df):
     data_df = pd.merge(data_df, copy_data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
 
 
-
     data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
     data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
 
     data_df.rename(columns={'home_team_goal_y': 'home_season_team_goal'}, inplace=True)
     data_df.rename(columns={'away_team_goal_y': 'away_season_team_goal'}, inplace=True)
 
+
+    """--------------------------------- Add Season Goals Class ------------------------------------"""
+
+
+    conditions_percent = [data_df["home_season_team_goal"] >= data_df["away_season_team_goal"],
+                          data_df["home_season_team_goal"] < data_df["away_season_team_goal"]]
+
+    choices = [1, -1]
+    data_df["seasonGoals_Class"] = np.select(conditions_percent, choices, default=np.nan)
+
+    # TODO: Does We Need All This??
+    # print(data_df["seasonGoals_Class"].value_counts())
+
+    # # TODO: Delete If Not Need
+    # data_df['away_season_team_goal'] = data_df['away_season_team_goal']*(-1)
+
+
+
+    """------------------------------------------------------------------------------"""
+
+
     # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
     data_df = data_df.dropna()
     # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
-
-
-
 
 
     """--------------------------------- Origin ------------------------------------"""
@@ -595,83 +790,181 @@ def dataframe_mean_goals(data_df):
     # # del data_df['goal_y']
     # # del data_df['home_team_api_id_y']
 
+    """------------------------------------------------------------------------------"""
+
     return data_df
 
 
 
-def dataframe_other_team_goals(data_df):
+
+def addTeamAttribute_Ratio(data_df):
 
     """--------------------------------- New ------------------------------------"""
 
-    data_home_df = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
-    data_away_df = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
+    data_df['overall_home_team_rating'] = data_df.loc[:, 'buildUpPlaySpeed_x':'defenceTeamWidth_x'].mean(axis=1) / data_df.loc[:, 'buildUpPlaySpeed_y':'defenceTeamWidth_y'].mean(axis=1)
 
-    copy_data_home_df = data_home_df.copy()
-    copy_data_away_df = data_away_df.copy()
-    seasons = pd.DataFrame(data_home_df['season'])
-    seasons = seasons.groupby(['season'])
+    # # TODO : If We Don't Do -1
+    # data_df['overall_away_team_rating'] = data_df.loc[:, 'buildUpPlaySpeed_y':'defenceTeamWidth_y'].mean(axis=1)
+    # data_df['overall_away_team_rating'] = data_df['overall_away_team_rating']*(-1)
 
-    new_seasons = []
-    old_seasons = []
-    i = 0
-    for x in seasons:
-        if i == 0:
-            i += 1
-            old_seasons.append(x[0])
-            continue
-        new_seasons.append(x[0])
-        old_seasons.append(x[0])
-    old_seasons.pop()
-
-    copy_data_home_df = copy_data_home_df[copy_data_home_df.season != '2015/2016']
-    copy_data_away_df = copy_data_away_df[copy_data_away_df.season != '2015/2016']
-
-    copy_data_home_df = copy_data_home_df.replace(old_seasons, new_seasons)
-    copy_data_away_df = copy_data_away_df.replace(old_seasons, new_seasons)
-
-    data_df = pd.merge(data_df, copy_data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
-    data_df = pd.merge(data_df, copy_data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
-
-    # data_df['goals_mean'] = np.floor(data_df['home_team_goal_y'] / data_df['away_team_goal_y'])
-    # del data_df['home_team_goal_y']
-    # del data_df['away_team_goal_y']
-
-    data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
-    data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
-
-    data_df.rename(columns={'home_team_goal_y': 'home_other_season_team_goal'}, inplace=True)
-    data_df.rename(columns={'away_team_goal_y': 'away_other_season_team_goal'}, inplace=True)
-
-    # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
-    data_df = data_df.dropna()
-    # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
-
-
-
-
+    if 'buildUpPlaySpeed_x' in data_df:
+        del data_df['buildUpPlaySpeed_x']
+    if 'buildUpPlaySpeed_y' in data_df:
+        del data_df['buildUpPlaySpeed_y']
+    if 'buildUpPlayPassing_x' in data_df:
+        del data_df['buildUpPlayPassing_x']
+    if 'buildUpPlayPassing_y' in data_df:
+        del data_df['buildUpPlayPassing_y']
+    if 'chanceCreationPassing_x' in data_df:
+        del data_df['chanceCreationPassing_x']
+    if 'chanceCreationPassing_y' in data_df:
+        del data_df['chanceCreationPassing_y']
+    if 'chanceCreationCrossing_x' in data_df:
+        del data_df['chanceCreationCrossing_x']
+    if 'chanceCreationCrossing_y' in data_df:
+        del data_df['chanceCreationCrossing_y']
+    if 'chanceCreationShooting_x' in data_df:
+        del data_df['chanceCreationShooting_x']
+    if 'chanceCreationShooting_y' in data_df:
+        del data_df['chanceCreationShooting_y']
+    if 'defencePressure_x' in data_df:
+        del data_df['defencePressure_x']
+    if 'defencePressure_y' in data_df:
+        del data_df['defencePressure_y']
+    if 'defenceAggression_x' in data_df:
+        del data_df['defenceAggression_x']
+    if 'defenceAggression_y' in data_df:
+        del data_df['defenceAggression_y']
+    if 'defenceTeamWidth_x' in data_df:
+        del data_df['defenceTeamWidth_x']
+    if 'defenceTeamWidth_y' in data_df:
+        del data_df['defenceTeamWidth_y']
 
     """--------------------------------- Origin ------------------------------------"""
 
+    # data_df['buildUpPlaySpeed'] = data_df['buildUpPlaySpeed_x']/data_df['buildUpPlaySpeed_y']
+    # del data_df['buildUpPlaySpeed_x']
+    # del data_df['buildUpPlaySpeed_y']
+    #
+    # data_df['buildUpPlayPassing'] = data_df['buildUpPlayPassing_x']/data_df['buildUpPlayPassing_y']
+    # del data_df['buildUpPlayPassing_x']
+    # del data_df['buildUpPlayPassing_y']
+    #
+    # data_df['chanceCreationPassing'] = data_df['chanceCreationPassing_x']/data_df['chanceCreationPassing_y']
+    # del data_df['chanceCreationPassing_x']
+    # del data_df['chanceCreationPassing_y']
+    #
+    # data_df['chanceCreationCrossing'] = data_df['chanceCreationCrossing_x']/data_df['chanceCreationCrossing_y']
+    # del data_df['chanceCreationCrossing_x']
+    # del data_df['chanceCreationCrossing_y']
+    #
+    # data_df['chanceCreationShooting'] = data_df['chanceCreationShooting_x']/data_df['chanceCreationShooting_y']
+    # del data_df['chanceCreationShooting_x']
+    # del data_df['chanceCreationShooting_y']
+    #
+    # data_df['defencePressure'] = data_df['defencePressure_x']/data_df['defencePressure_y']
+    # del data_df['defencePressure_x']
+    # del data_df['defencePressure_y']
+    #
+    # data_df['defenceAggression'] = data_df['defenceAggression_x']/data_df['defenceAggression_y']
+    # del data_df['defenceAggression_x']
+    # del data_df['defenceAggression_y']
+    #
+    # data_df['defenceTeamWidth'] = data_df['defenceTeamWidth_x']/data_df['defenceTeamWidth_y']
+    # del data_df['defenceTeamWidth_x']
+    # del data_df['defenceTeamWidth_y']
 
-    # data_home_df = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
-    # data_away_df = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
-    #
-    # data_df = pd.merge(data_df, data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
-    # data_df = pd.merge(data_df, data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
-    #
-    # # data_df['goals_mean'] = np.floor(data_df['home_team_goal_y'] / data_df['away_team_goal_y'])
-    # # del data_df['home_team_goal_y']
-    # # del data_df['away_team_goal_y']
-    #
-    # data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
-    # data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
-    #
-    # data_df.rename(columns={'home_team_goal_y': 'home_other_season_team_goal'}, inplace=True)
-    # data_df.rename(columns={'away_team_goal_y': 'away_other_season_team_goal'}, inplace=True)
-
-
+    """------------------------------------------------------------------------------"""
 
     return data_df
+
+
+
+
+def remove_x_y(dataBeforeRename):
+    """
+    Removing From The Features Names the "_x" And "_y" -> "home_" And "away_"
+    :param dataBeforeRename: The Data that we want to convert
+    :return: The Data After The Convert
+    """
+    for col in dataBeforeRename.columns:
+        if '_x' == col[len(col) - 2:len(col)]:
+            dataBeforeRename = dataBeforeRename.rename(
+                columns={col: 'home_' + col[:len(col) - 2]}
+                , inplace=False)
+        if '_y' == col[len(col) - 2:len(col)]:
+            dataBeforeRename = dataBeforeRename.rename(
+                columns={col: 'away_' + col[:len(col) - 2]}
+                , inplace=False)
+
+    return dataBeforeRename
+
+
+
+
+def clearUnusedFeatures(dataToClean):
+    """
+    Cleaning The Features That We No Longer Needed
+    - After The Init And
+    - Before The Train
+    :param dataToClean: The Dataframe that we need to clear
+    :return: The Dataframe after clean
+    """
+    if "home_team_goal" in dataToClean:
+        del dataToClean["home_team_goal"]
+
+    if "away_team_goal" in dataToClean:
+        del dataToClean["away_team_goal"]
+
+    if "season" in dataToClean:
+        del dataToClean["season"]
+
+    if "date" in dataToClean:
+        del dataToClean["date"]
+
+    if "home_team_api_id" in dataToClean:
+        del dataToClean["home_team_api_id"]
+    if "away_team_api_id" in dataToClean:
+        del dataToClean["away_team_api_id"]
+
+    if "match_api_id" in dataToClean:
+        del dataToClean['match_api_id']
+
+    if "date_info" in dataToClean:
+        del dataToClean["date_info"]
+
+    if "home_Away_LastMatchesGoals" in dataToClean:
+        del dataToClean["home_Away_LastMatchesGoals"]
+
+    if "away_Home_LastMatchesGoals" in dataToClean:
+        del dataToClean["away_Home_LastMatchesGoals"]
+
+    if "result" in dataToClean:
+        dataToClean["Result"] = dataToClean["result"]
+        del dataToClean["result"]
+
+
+    # del new_df["home_percentHome"]
+    # del new_df["home_percentAway"]
+    # del new_df["away_percentHome"]
+    # del new_df["away_percentAway"]
+
+    # del new_df["away_whereBetter"]
+    # del new_df["home_whereBetter"]
+
+    # del new_df["home_season_team_goal"]
+    # del new_df["away_season_team_goal"]
+    # del new_df["home_other_season_team_goal"]
+    # del new_df["away_other_season_team_goal"]
+
+
+    return dataToClean
+
+
+
+
+"""--------------------------------- Shahar Function ------------------------------------"""
+# TODO : What We This Function
 
 
 def get_last_matches(match, data_df):
@@ -751,78 +1044,169 @@ def get_last_matches(match, data_df):
     return result.loc[0]
 
 
-def addTeamNames(new_df, data_team):
+"""---------------------------------------------------------------------"""
+
+
+
+"""--------------------------------- Daniel Function ------------------------------------"""
+# TODO : What We This Function
+
+
+def addLastMatchesGoals(match_Data_DF):
     """
-    Add Into The Data The Teams Unique Names According The Team Api ID
-    :param new_df: The Data that we want to add the teams names
-    :param data_team: The Data with the teams names
-    :return: The Final Data With The Teams Names Inside
+    Add New Feature - Sum Of The Last 'gamesBack' Of Each Team In Match
+    :param match_Data_DF: The DataFrame Of Matches
+    :return: The DataFrame With The New Feature - LastMatchesGoals
     """
-    new_df_with_name = pd.merge(data_team, new_df, how='inner', left_on=['team_api_id'],
-                                right_on=['away_team_api_id'])
 
-    new_df_with_name = pd.merge(data_team, new_df_with_name, how='inner', left_on=['team_api_id'],
-                                right_on=['home_team_api_id'])
-
-    del new_df_with_name['team_api_id_x']
-    del new_df_with_name['team_api_id_y']
-    new_df_with_name = remove_x_y(new_df_with_name)
-    return new_df_with_name
+    """--------------------------------- Splitting To Home And Away------------------------------------"""
 
 
-def remove_x_y(new_df_with_name):
+    match_sorted_by_home = match_Data_DF.sort_values(by=['home_team_api_id', 'date'])
+    match_sorted_by_home = match_sorted_by_home[['home_team_api_id', 'date', 'home_team_goal']]
+
+    match_sorted_by_away = match_Data_DF.sort_values(by=['away_team_api_id', 'date'])
+    match_sorted_by_away = match_sorted_by_away[['away_team_api_id', 'date', 'away_team_goal']]
+
+
+    """--------------------------------- Home Team Goals Calculate ------------------------------------"""
+
+
+    match_sorted_by_home.insert(len(match_sorted_by_home.columns), 'Home_LastMatchesGoals', match_sorted_by_home['home_team_goal'])
+    inxOfCol = len(match_sorted_by_home.columns) - 1
+
+    homeAfterAdd = calculateHomeOrAwayGoals(match_sorted_by_home, inxOfCol, 'home_')
+
+
+    """--------------------------------- Away Team Goals Calculate ------------------------------------"""
+
+
+    match_sorted_by_away.insert(len(match_sorted_by_away.columns), 'Away_LastMatchesGoals', match_sorted_by_away['away_team_goal'])
+    inxOfCol = len(match_sorted_by_away.columns) - 1
+
+    awayAfterAdd = calculateHomeOrAwayGoals(match_sorted_by_away, inxOfCol, 'away_')
+
+    # # TODO: Delete if Don't Need (-1)
+    # awayAfterAdd['Away_LastMatchesGoals'] = awayAfterAdd['Away_LastMatchesGoals']*(-1)
+
+
+    """--------------------------------- Merge To Main Data ------------------------------------"""
+
+
+    match_Data_DF = pd.merge(match_Data_DF, homeAfterAdd, how='inner',
+                             left_on=['home_team_api_id', 'date', 'home_team_goal'],
+                             right_on=['home_team_api_id', 'date', 'home_team_goal'])
+
+    match_Data_DF = pd.merge(match_Data_DF, awayAfterAdd, how='inner',
+                             left_on=['away_team_api_id', 'date', 'away_team_goal'],
+                             right_on=['away_team_api_id', 'date', 'away_team_goal'])
+
+    return match_Data_DF
+
+
+
+
+
+def calculateHomeOrAwayGoals(sortedHomeOrAway, inxOfCol, home_away, gamesBack=4):
     """
-    Removing From The Features Names the "_x" And "_y" -> "home_" And "away_"
-    :param new_df_with_name: The Data that we want to convert
-    :return: The Data After The Convert
+    Help Function - Calculating the Number Of Goals In The Last 'gamesBack' Games Per Team
+    :param sortedHomeOrAway: The DataFrame With The Team Games - Sorted By TeamID And Date
+    :param inxOfCol: The Index Of The New Feature
+    :param home_away: Which Team We Now - Home Or Away
+    :param gamesBack: How Many Games Back Need To Calculate
+    :return: The DataFrame With The New Feature - The Team With The Sum Of Last Games
     """
-    for col in new_df_with_name.columns:
-        if '_x' == col[len(col) - 2:len(col)]:
-            new_df_with_name = new_df_with_name.rename(
-                columns={col: 'home_' + col[:len(col) - 2]}
-                , inplace=False)
-        if '_y' == col[len(col) - 2:len(col)]:
-            new_df_with_name = new_df_with_name.rename(
-                columns={col: 'away_' + col[:len(col) - 2]}
-                , inplace=False)
+    i = 0
+    indexesOfStarts = []
+    teamID = 0
+    while i < len(sortedHomeOrAway):
+        if sortedHomeOrAway.iloc[i, 0] != teamID:
+            indexesOfStarts.append(i)
+            i += gamesBack
+            teamID = sortedHomeOrAway.iloc[i, 0]
 
-    return new_df_with_name
+        sortedHomeOrAway.iat[i, inxOfCol] = sortedHomeOrAway[home_away+'team_goal'][i - gamesBack: i].sum()
+        i += 1
+
+    for i, indexNow in enumerate(indexesOfStarts):
+        if i + 1 != len(indexesOfStarts):
+            fillMean = np.floor(sortedHomeOrAway.iloc[indexNow + gamesBack:indexesOfStarts[i + 1], inxOfCol].mean())
+        else:
+            fillMean = np.floor(sortedHomeOrAway.iloc[indexNow + gamesBack:, inxOfCol].mean())
+        for j in range(indexNow, indexNow + gamesBack):
+            sortedHomeOrAway.iat[j, inxOfCol] = fillMean
+
+    return sortedHomeOrAway
 
 
-def sqlQuery(conn):
+
+
+
+
+
+"""---------------------------------------- Functions With No Longer Use -------------------------------------------"""
+
+
+
+
+def save2CSV(database_after_clean, file_path):
     """
-    The SQL Queries For Getting The Data From The SQL Database
-    :param conn: The Connection
-    :return: The SQL Data As DataFrames - Match_DF, TeamAttributes_DF, Teams_DF
+    Save The Database As CSV File
+    :param database_after_clean: The data that we want to save in CSV
+    :param file_path: The Path where we want to save the database as CSV
     """
-    data_matchDF = pd.read_sql_query(
-        'SELECT match_api_id, home_team_api_id,away_team_api_id,season,date,home_team_goal,away_team_goal from Match', conn)
+    database_after_clean.to_csv(file_path + "database_after_clean.csv")
 
-    data_Team_AttrDF = pd.read_sql_query(
-        'SELECT team_api_id,date,buildUpPlaySpeed,buildUpPlayPassing,chanceCreationPassing, chanceCreationCrossing, '
-        'chanceCreationShooting, defencePressure,defenceAggression, defenceTeamWidth from Team_Attributes',
-        conn)
 
-    data_Team = pd.read_sql_query('SELECT team_api_id, team_long_name from Team', conn)
 
-    # data_Players_AttrDF = pd.read_sql_query(
-    #     'SELECT player_api_id,date,overall_rating from Player_Attributes',
-    #     conn)
-    # data_Players_AttrDF = pd.read_sql_query(
-    #     'SELECT player_api_id,date,overall_rating,potential,free_kick_accuracy,gk_kicking,shot_power from Player_Attributes',
-    #     conn)
-    data_Players_AttrDF = pd.read_sql_query(
-        'SELECT player_api_id,date,overall_rating,potential,free_kick_accuracy,gk_kicking,shot_power,crossing,finishing,heading_accuracy,short_passing,volleys,dribbling,curve,long_passing,ball_control,acceleration,positioning,sprint_speed,aggression,long_shots from Player_Attributes',
-        conn)
 
-    data_matchDF_players = pd.read_sql_query(
-        'SELECT home_team_api_id,away_team_api_id,season,date, home_player_1, home_player_2, home_player_3, '
-        'home_player_4, home_player_5, home_player_6, home_player_7, home_player_8, '
-        'home_player_9, home_player_10, home_player_11 , away_player_1, away_player_2, away_player_3, away_player_4, '
-        'away_player_5, away_player_6, away_player_7, away_player_8, away_player_9, away_player_10, away_player_11 '
-        'from '
-        'Match', conn)
-    return data_matchDF, data_Team_AttrDF, data_Team, data_Players_AttrDF, data_matchDF_players
+def convertValuesStringToInt(data):
+    """
+    Convert The Values Of The Features - From String To Numeric
+    :param data: The DataFrames Needed To Convert
+    :return: The DataFrame With Numeric Values
+    """
+    le = preprocessing.LabelEncoder()
+    for col in data.columns:
+        if isinstance(data[col][0], str) and "name" not in col:
+            # turn a string label into a number
+            data[col] = le.fit_transform(data[col])
+
+    return data
+
+
+
+def margeWhereBetterWithMainData(df_2012_2013_2014_before, df_15_16_before):
+    """
+    Merging The Dataframe Of Where Better With The Main Dataframe
+    :param df_2012_2013_2014_before: The Main Dataframe without "whereBetter"
+    :param df_15_16_before: The Dataframe Of "whereBetter"
+    :return: The Main Dataframe With The Feature "whereBetter"  - Train, Test
+    """
+    df_percent_win_12_13_14 = getWhereBetterHomeOrAway(df_2012_2013_2014_before)
+    df_percent_win_15_16 = getWhereBetterHomeOrAway(df_15_16_before)
+
+    df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before, df_percent_win_12_13_14, how='inner',
+                                 left_on=['home_team_api_id'],
+                                 right_on=['team_api_id'])
+
+    df_2012_2013_2014 = pd.merge(df_2012_2013_2014, df_percent_win_12_13_14, how='inner',
+                                 left_on=['away_team_api_id'],
+                                 right_on=['team_api_id'])
+
+    df_15_16 = pd.merge(df_15_16_before, df_percent_win_15_16, how='inner',
+                        left_on=['home_team_api_id'],
+                        right_on=['team_api_id'])
+
+    df_15_16 = pd.merge(df_15_16, df_percent_win_15_16, how='inner',
+                        left_on=['away_team_api_id'],
+                        right_on=['team_api_id'])
+
+    df_2012_2013_2014 = remove_x_y(df_2012_2013_2014)
+    df_15_16 = remove_x_y(df_15_16)
+
+    return df_2012_2013_2014, df_15_16
+
 
 
 def getWhereBetterHomeOrAway(new_df_with_name):
@@ -879,419 +1263,158 @@ def getWhereBetterHomeOrAway(new_df_with_name):
 
 
 
-def addWinPresentInLastGames(new_df_with_name, match_Data_DF):
+
+def resultToCategorical(dataToConvert):
     """
-    Add New Feature - The Percentage Of Wins In The Past Games For Each Team In Match
-    :param new_df_with_name: The DataFrame With All Matches Information But The Full Date
-    :param match_Data_DF: The Original DataFrame Of The Matches - With The Full Date - For Merge
-    :return: The DataFrame - Matches With The New Feature For Each Team
+    Converting the result feature from int to categorical [2, 1, 0] -> ["Win", "Draw", "Lose"]
+    :param dataToConvert: The Dataframe that needed to convert
+    :return: The Dataframe after the convert
     """
+    # Adding a column of binary representation win loss and draw.
+    conditions = [dataToConvert["result"] == 2,
+                  dataToConvert["result"] == 1,
+                  dataToConvert["result"] == 0]
 
-    """--------------------------------- Preparing The Data Before Calculating ------------------------------------"""
+    choices = ["Win", "Draw", "Lose"]
+    dataToConvert["result"] = np.select(conditions, choices, default=np.nan)
+    dataToConvert["HomeTeamResult"] = dataToConvert["result"]
+    del dataToConvert["result"]
 
-    new_df_with_name = pd.merge(new_df_with_name, match_Data_DF, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'match_api_id'],
-                                right_on=['home_team_api_id', 'away_team_api_id', 'season', 'match_api_id'])
-
-
-    match_sorted_by_home = new_df_with_name.sort_values(by=['home_team_api_id', 'date_y'])
-    match_sorted_by_home = match_sorted_by_home[['home_team_api_id', 'date_y', 'result', 'match_api_id']]
-
-    match_sorted_by_away = new_df_with_name.sort_values(by=['away_team_api_id', 'date_y'])
-    match_sorted_by_away = match_sorted_by_away[['away_team_api_id', 'date_y', 'result', 'match_api_id']]
-
-
-    """--------------------------------- Home Team - Win Home Present ------------------------------------"""
+    return dataToConvert
 
 
-    match_sorted_by_home.insert(len(match_sorted_by_home.columns), 'percentHome', match_sorted_by_home['result'].astype(float))
-    inxOfCol = len(match_sorted_by_home.columns) - 1
 
-    homePresent = calculateWinPresent(match_sorted_by_home, inxOfCol)
+def addTeamNames(dataBeforeTeamNames, teams_Data_DF):
+    """
+    Add Into The Data The Teams Unique Names According The Team Api ID
+    :param dataBeforeTeamNames: The Data that we want to add the teams names
+    :param teams_Data_DF: The Data with the teams names
+    :return: The Final Data With The Teams Names Inside
+    """
+    new_df_with_name = pd.merge(teams_Data_DF, dataBeforeTeamNames, how='inner', left_on=['team_api_id'],
+                                right_on=['away_team_api_id'])
 
-
-    """--------------------------------- Away Team - Win Away Present ------------------------------------"""
-
-
-    match_sorted_by_away.insert(len(match_sorted_by_away.columns), 'percentAway', match_sorted_by_away['result'].astype(float))
-    inxOfCol = len(match_sorted_by_away.columns) - 1
-
-    awayPresent = calculateWinPresent(match_sorted_by_away, inxOfCol)
-
-    """--------------------------------- Merging The Data With The New Feature ------------------------------------"""
-
-    new_df_with_name = pd.merge(new_df_with_name, homePresent, how='inner', right_on=['home_team_api_id', 'match_api_id'], left_on=['home_team_api_id', 'match_api_id'])
-    new_df_with_name = pd.merge(new_df_with_name, awayPresent, how='inner', right_on=['away_team_api_id', 'match_api_id'], left_on=['away_team_api_id', 'match_api_id'])
+    new_df_with_name = pd.merge(teams_Data_DF, new_df_with_name, how='inner', left_on=['team_api_id'],
+                                right_on=['home_team_api_id'])
 
 
-    """--------------------------------- Delete And Rename Features Names ------------------------------------"""
-
-    if 'date_y' in new_df_with_name:
-        del new_df_with_name['date_y']
-    if 'home_team_goal_y' in new_df_with_name:
-        del new_df_with_name['home_team_goal_y']
-    if 'away_team_goal_y' in new_df_with_name:
-        del new_df_with_name['away_team_goal_y']
-
-    new_df_with_name.rename(columns={'date_x': 'date'}, inplace=True)
-    new_df_with_name.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
-    new_df_with_name.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
-
+    if 'team_api_id_x' in new_df_with_name:
+        del new_df_with_name['team_api_id_x']
+    if 'team_api_id_y' in new_df_with_name:
+        del new_df_with_name['team_api_id_y']
+    new_df_with_name = remove_x_y(new_df_with_name)
 
     return new_df_with_name
 
 
-def calculateWinPresent(match_sorted_WB, inxOfCol):
-    """
-    Help Function - Calculating The Win Percentage For Each Team In The Last Matches
-    :param match_sorted_WB: The DataFrame Of The Matches - Sorted By: HomeID / AwayID And Date
-    :param inxOfCol: Index Of The New Feature
-    :return: The DataFrame With The Past Games Win Percentage
-    """
 
+
+def mergeMatchWithTeamAttribute_WithNull(data_match_df, data_team_attr_df):
+    """
+    Merging The Data Of:
+    -The Matches With
+    -The Data Attributes Of Each Team Playing in Each Match
+    ** With Null **
+    :param data_match_df: The Data about the matches
+    :param data_team_attr_df: The Data about the team and there attributes
+    :return: The Data merged with the matches and the attributes of the teams in the match - With Null
+    """  # Clearing the date from day and month
+    data_match_df['date'] = data_match_df['date'].str.slice(stop=4)
+    data_team_attr_df['date'] = data_team_attr_df['date'].str.slice(stop=4)
+
+    # sorting by relevant col
+    data_matchDF = data_match_df.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
+    data_Team_AttrDF = data_team_attr_df.sort_values(by=['team_api_id', 'date'])
+
+    # merging first by ['date', 'home_team_api_id'] and again by ['date', 'away_team_api_id']
+    new_df_outer = pd.merge(data_matchDF, data_Team_AttrDF, how='outer', left_on=['date', 'home_team_api_id'],
+                            right_on=['date', 'team_api_id'])
+    new_df_outer = pd.merge(new_df_outer, data_Team_AttrDF, how='outer', left_on=['date', 'away_team_api_id'],
+                            right_on=['date', 'team_api_id'])
+
+    new_df_outer = new_df_outer.sort_values(by=['home_team_api_id', 'away_team_api_id', 'date'])
+
+    return new_df_outer
+
+
+
+
+def addMeanGoalsLastSeasonByOther(data_df):
+
+    """--------------------------------- New ------------------------------------"""
+
+    data_home_df = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
+    data_away_df = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
+
+    copy_data_home_df = data_home_df.copy()
+    copy_data_away_df = data_away_df.copy()
+    seasons = pd.DataFrame(data_home_df['season'])
+    seasons = seasons.groupby(['season'])
+
+    new_seasons = []
+    old_seasons = []
     i = 0
-    startIndex = 0
-    counterOfWins = 0
-    teamID = 0
-    while i < len(match_sorted_WB):
-        # Moved To a New TeamID - Reboot All Variables
-        if match_sorted_WB.iloc[i, 0] != teamID:
-            teamID = match_sorted_WB.iloc[i, 0]
-            startIndex = i
-            counterOfWins = 0
-            if match_sorted_WB.iloc[i, 2] == 2:
-                counterOfWins += 1
-            match_sorted_WB.iat[i, inxOfCol] = 0.33
-
-        else:
-            match_sorted_WB.iat[i, inxOfCol] = counterOfWins / (i - startIndex)
-            if match_sorted_WB.iloc[i, 2] == 2:
-                counterOfWins += 1
-        i += 1
-
-    # Delete No Needed Features
-    if 'result' in match_sorted_WB:
-        del match_sorted_WB['result']
-    if 'date_y' in match_sorted_WB:
-        del match_sorted_WB['date_y']
-
-    return match_sorted_WB
-
-
-def addingResultFeature(new_df):
-    """
-    Add Result Label For Each Game - According To The Home Team
-    "home_team_goals" - "away_team_goals" =
-     2 = Win
-     1 = Draw
-     0 = Lose
-    :param new_df: The Dataframe With The Matches Information
-    :return:The Data After Adding The Label "Result"
-    """
-    # Adding a column of binary representation win loss and draw.
-    conditions = [new_df["home_team_goal"] > new_df["away_team_goal"],
-                  new_df["home_team_goal"] < new_df["away_team_goal"],
-                  new_df["home_team_goal"] == new_df["away_team_goal"]]
-
-    choices = [2, 0, 1]
-    new_df["result"] = np.select(conditions, choices, default=np.nan)
-    new_df["result"] = new_df["result"].astype(int)
-
-    return new_df
-
-
-def resultToCategorical(new_df):
-    """
-    Converting the result feature from int to categorical [2, 1, 0] -> ["Win", "Draw", "Lose"]
-    :param new_df: The Dataframe that needed to convert
-    :return: The Dataframe after the convert
-    """
-    # Adding a column of binary representation win loss and draw.
-    conditions = [new_df["result"] == 2,
-                  new_df["result"] == 1,
-                  new_df["result"] == 0]
-
-    choices = ["Win", "Draw", "Lose"]
-    new_df["result"] = np.select(conditions, choices, default=np.nan)
-    new_df["HomeTeamResult"] = new_df["result"]
-    del new_df["result"]
-
-    return new_df
-
-
-def clearUnusedFeatures(new_df):
-    """
-    Cleaning The Features That We No Longer Needed
-    - After The Init And
-    - Before The Train
-    :param new_df: The Dataframe that we need to clear
-    :return: The Dataframe after clean
-    """
-    if "home_team_goal" in new_df:
-        del new_df["home_team_goal"]
-
-    if "away_team_goal" in new_df:
-        del new_df["away_team_goal"]
-
-    if "season" in new_df:
-        del new_df["season"]
-
-    if "date" in new_df:
-        del new_df["date"]
-
-    if "home_team_api_id" in new_df:
-        del new_df["home_team_api_id"]
-    if "away_team_api_id" in new_df:
-        del new_df["away_team_api_id"]
-
-    if "match_api_id" in new_df:
-        del new_df['match_api_id']
+    for x in seasons:
+        if i == 0:
+            i += 1
+            old_seasons.append(x[0])
+            continue
+        new_seasons.append(x[0])
+        old_seasons.append(x[0])
+    old_seasons.pop()
 
-    if "date_info" in new_df:
-        del new_df["date_info"]
+    copy_data_home_df = copy_data_home_df[copy_data_home_df.season != '2015/2016']
+    copy_data_away_df = copy_data_away_df[copy_data_away_df.season != '2015/2016']
 
-    if "home_Away_LastMatchesGoals" in new_df:
-        del new_df["home_Away_LastMatchesGoals"]
+    copy_data_home_df = copy_data_home_df.replace(old_seasons, new_seasons)
+    copy_data_away_df = copy_data_away_df.replace(old_seasons, new_seasons)
 
-    if "away_Home_LastMatchesGoals" in new_df:
-        del new_df["away_Home_LastMatchesGoals"]
+    data_df = pd.merge(data_df, copy_data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
+    data_df = pd.merge(data_df, copy_data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
 
-    if "result" in new_df:
-        new_df["Result"] = new_df["result"]
-        del new_df["result"]
+    # data_df['goals_mean'] = np.floor(data_df['home_team_goal_y'] / data_df['away_team_goal_y'])
+    # del data_df['home_team_goal_y']
+    # del data_df['away_team_goal_y']
 
+    data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
+    data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
 
+    data_df.rename(columns={'home_team_goal_y': 'home_other_season_team_goal'}, inplace=True)
+    data_df.rename(columns={'away_team_goal_y': 'away_other_season_team_goal'}, inplace=True)
 
-    # del new_df["home_percentHome"]
-    # del new_df["home_percentAway"]
-    # del new_df["away_percentHome"]
-    # del new_df["away_percentAway"]
+    # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
+    data_df = data_df.dropna()
+    # print(data_df.apply(lambda x: sum(x.isnull()), axis=0))
 
-    # del new_df["away_whereBetter"]
-    # del new_df["home_whereBetter"]
 
-    # del new_df["home_season_team_goal"]
-    # del new_df["away_season_team_goal"]
-    # del new_df["home_other_season_team_goal"]
-    # del new_df["away_other_season_team_goal"]
 
-    return new_df
 
 
-def margeWhereBetterWithMainData(df_2012_2013_2014_before, df_15_16_before):
-    """
-    Merging The Dataframe Of Where Better With The Main Dataframe
-    :param df_2012_2013_2014_before: The Main Dataframe without "whereBetter"
-    :param df_15_16_before: The Dataframe Of "whereBetter"
-    :return: The Main Dataframe With The Feature "whereBetter"  - Train, Test
-    """
-    df_percent_win_12_13_14 = getWhereBetterHomeOrAway(df_2012_2013_2014_before)  # TODO: Remember To Active Back
-    df_percent_win_15_16 = getWhereBetterHomeOrAway(df_15_16_before)
+    """--------------------------------- Origin ------------------------------------"""
 
-    df_2012_2013_2014 = pd.merge(df_2012_2013_2014_before, df_percent_win_12_13_14, how='inner',
-                                 left_on=['home_team_api_id'],
-                                 right_on=['team_api_id'])
 
-    df_2012_2013_2014 = pd.merge(df_2012_2013_2014, df_percent_win_12_13_14, how='inner',
-                                 left_on=['away_team_api_id'],
-                                 right_on=['team_api_id'])
+    # data_home_df = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
+    # data_away_df = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
+    #
+    # data_df = pd.merge(data_df, data_home_df, how='left', left_on=['home_team_api_id', 'season'], right_on=['home_team_api_id', 'season'])
+    # data_df = pd.merge(data_df, data_away_df, how='left', left_on=['away_team_api_id', 'season'], right_on=['away_team_api_id', 'season'])
+    #
+    # # data_df['goals_mean'] = np.floor(data_df['home_team_goal_y'] / data_df['away_team_goal_y'])
+    # # del data_df['home_team_goal_y']
+    # # del data_df['away_team_goal_y']
+    #
+    # data_df.rename(columns={'home_team_goal_x': 'home_team_goal'}, inplace=True)
+    # data_df.rename(columns={'away_team_goal_x': 'away_team_goal'}, inplace=True)
+    #
+    # data_df.rename(columns={'home_team_goal_y': 'home_other_season_team_goal'}, inplace=True)
+    # data_df.rename(columns={'away_team_goal_y': 'away_other_season_team_goal'}, inplace=True)
 
-    df_15_16 = pd.merge(df_15_16_before, df_percent_win_15_16, how='inner',
-                        left_on=['home_team_api_id'],
-                        right_on=['team_api_id'])
+    """------------------------------------------------------------------------------"""
 
-    df_15_16 = pd.merge(df_15_16, df_percent_win_15_16, how='inner',
-                        left_on=['away_team_api_id'],
-                        right_on=['team_api_id'])
 
-    df_2012_2013_2014 = remove_x_y(df_2012_2013_2014)
-    df_15_16 = remove_x_y(df_15_16)
+    return data_df
 
-    return df_2012_2013_2014, df_15_16
 
 
-
-def convertValuesStringToInt(data):
-    """
-    Convert The Values Of The Features - From String To Numeric
-    :param data: The DataFrames Needed To Convert
-    :return: The DataFrame With Numeric Values
-    """
-    le = preprocessing.LabelEncoder()
-    for col in data.columns:
-        if isinstance(data[col][0], str) and "name" not in col:
-            # turn a string label into a number
-            data[col] = le.fit_transform(data[col])
-
-    return data
-
-
-
-def addLastMatchesGoals(match_Data_DF):
-    """
-    Add New Feature - Sum Of The Last 'gamesBack' Of Each Team In Match
-    :param match_Data_DF: The DataFrame Of Matches
-    :return: The DataFrame With The New Feature - LastMatchesGoals
-    """
-
-    """--------------------------------- Splitting To Home And Away------------------------------------"""
-
-
-    match_sorted_by_home = match_Data_DF.sort_values(by=['home_team_api_id', 'date'])
-    match_sorted_by_home = match_sorted_by_home[['home_team_api_id', 'date', 'home_team_goal']]
-
-    match_sorted_by_away = match_Data_DF.sort_values(by=['away_team_api_id', 'date'])
-    match_sorted_by_away = match_sorted_by_away[['away_team_api_id', 'date', 'away_team_goal']]
-
-
-    """--------------------------------- Home Team Goals Calculate ------------------------------------"""
-
-
-    match_sorted_by_home.insert(len(match_sorted_by_home.columns), 'Home_LastMatchesGoals', match_sorted_by_home['home_team_goal'])
-    inxOfCol = len(match_sorted_by_home.columns) - 1
-
-    homeAfterAdd = calculateHomeOrAwayGoals(match_sorted_by_home, inxOfCol, 'home_')
-
-
-    """--------------------------------- Away Team Goals Calculate ------------------------------------"""
-
-
-    match_sorted_by_away.insert(len(match_sorted_by_away.columns), 'Away_LastMatchesGoals', match_sorted_by_away['away_team_goal'])
-    inxOfCol = len(match_sorted_by_away.columns) - 1
-
-    awayAfterAdd = calculateHomeOrAwayGoals(match_sorted_by_away, inxOfCol, 'away_')
-
-
-    """--------------------------------- Merge To Main Data ------------------------------------"""
-
-
-    match_Data_DF = pd.merge(match_Data_DF, homeAfterAdd, how='inner',
-                             left_on=['home_team_api_id', 'date', 'home_team_goal'],
-                             right_on=['home_team_api_id', 'date', 'home_team_goal'])
-
-    match_Data_DF = pd.merge(match_Data_DF, awayAfterAdd, how='inner',
-                             left_on=['away_team_api_id', 'date', 'away_team_goal'],
-                             right_on=['away_team_api_id', 'date', 'away_team_goal'])
-
-    return match_Data_DF
-
-
-
-
-
-def calculateHomeOrAwayGoals(sortedHomeOrAway, inxOfCol, home_away, gamesBack=4):
-    """
-    Help Function - Calculating the Number Of Goals In The Last 'gamesBack' Games Per Team
-    :param sortedHomeOrAway: The DataFrame With The Team Games - Sorted By TeamID And Date
-    :param inxOfCol: The Index Of The New Feature
-    :param home_away: Which Team We Now - Home Or Away
-    :param gamesBack: How Many Games Back Need To Calculate
-    :return: The DataFrame With The New Feature - The Team With The Sum Of Last Games
-    """
-    i = 0
-    indexesOfStarts = []
-    teamID = 0
-    while i < len(sortedHomeOrAway):
-        if sortedHomeOrAway.iloc[i, 0] != teamID:
-            indexesOfStarts.append(i)
-            i += gamesBack
-            teamID = sortedHomeOrAway.iloc[i, 0]
-
-        sortedHomeOrAway.iat[i, inxOfCol] = sortedHomeOrAway[home_away+'team_goal'][i - gamesBack: i].sum()
-        i += 1
-
-    for i, indexNow in enumerate(indexesOfStarts):
-        if i + 1 != len(indexesOfStarts):
-            fillMean = np.floor(sortedHomeOrAway.iloc[indexNow + gamesBack:indexesOfStarts[i + 1], inxOfCol].mean())
-        else:
-            fillMean = np.floor(sortedHomeOrAway.iloc[indexNow + gamesBack:, inxOfCol].mean())
-        for j in range(indexNow, indexNow + gamesBack):
-            sortedHomeOrAway.iat[j, inxOfCol] = fillMean
-
-    return sortedHomeOrAway
-
-
-
-
-def init():
-    """
-    The Init And Building The Data From The Model Training And Testing
-    :return: The Train Data , Test Data
-    """
-
-    """--------------------------------- SQL Connection And Queries ------------------------------------"""
-
-    database = path + "database.sqlite"
-
-    # create a database connection
-    conn = create_connection(database)
-    cursor = conn.cursor()
-
-    # create DF
-    match_Data_DF, team_Attr_Data_DF, teams_Data_DF, data_Players_AttrDF, data_matchDF_players = sqlQuery(conn)
-
-
-    # TODO : Try Add 5 Past Games Goal
-    # match_Data_DF = addLastMatchesGoals(match_Data_DF)
-
-
-    """--------------------------------- Merging All The DataFrames Into One ------------------------------------"""
-
-    Players_Attr_avg = dataframe_filter_players(data_matchDF_players, data_Players_AttrDF)
-
-    match_Data_DF_copy = match_Data_DF.copy()
-
-    matchWithTeamAttributes_df = mergeMatchWithTeamAttribute(match_Data_DF, team_Attr_Data_DF)
-
-    """--------------------------------- Adding New Features ------------------------------------"""
-
-    # Adding Label Result To The Data
-    matchWithTeamAttributes_df = addingResultFeature(matchWithTeamAttributes_df)
-
-    """--------------------------------- Where Better ------------------------------------"""
-
-    matchWithTeamAttributes_df = addWinPresentInLastGames(matchWithTeamAttributes_df, match_Data_DF_copy)
-
-
-    matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
-
-    matchWithTeamAttributes_df = dataframe_mean_goals(matchWithTeamAttributes_df)
-
-    matchWithTeamAttributes_df = dataframe_attributeTeam_ratio(matchWithTeamAttributes_df)
-
-
-    """--------------------------------- Shahar Function ------------------------------------"""
-
-
-    # goals_df = matchWithTeamAttributes_df.apply(lambda x: get_last_matches(x, matchWithTeamAttributes_df), axis=1)
-    # matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, goals_df, how='left', left_on=['match_api_id'], right_on=['match_api_id'])
-
-    """--------------------------------------------------------------------------------------"""
-
-
-    # Calculate Where The Team Playing Better
-    trainData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2012/2013", "2013/2014", "2014/2015"]))]
-    testData_before_WB = matchWithTeamAttributes_df.loc[(matchWithTeamAttributes_df['season'].isin(["2015/2016"]))]
-
-    # Rename The Features  - _x -> home | _y -> away
-
-    trainData = remove_x_y(trainData_before_WB)
-    testData = remove_x_y(testData_before_WB)
-
-
-    """--------------------------------- Clearing The UnNeeded Features And Fit Transform Them ------------------------------------"""
-
-    trainData = clearUnusedFeatures(trainData)
-    testData = clearUnusedFeatures(testData)
-
-    # trainData = convertValuesStringToInt(trainData.copy())
-    # testData = convertValuesStringToInt(testData.copy())
-
-    # scaler.fit_transform(trainData.to_numpy())
-    # scaler.fit_transform(testData.to_numpy())
-
-    cursor.close()
-    conn.close()
-
-    return trainData, testData
 
 

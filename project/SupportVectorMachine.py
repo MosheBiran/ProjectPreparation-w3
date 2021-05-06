@@ -11,6 +11,10 @@ from sklearn.preprocessing import StandardScaler
 
 
 def model_SVM(trainData, testData):
+
+    """--------------------------------- Splitting The Data ------------------------------------"""
+
+
     X = trainData.iloc[:, :-1].values
     y = trainData.iloc[:, len(trainData.columns) - 1].values
 
@@ -20,38 +24,43 @@ def model_SVM(trainData, testData):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20)
 
 
-
-    # scaler = StandardScaler()
-    # scaler.fit(X_train)
-    #
-    # X_train = scaler.transform(X_train)
-    # X_test = scaler.transform(X_test)
-    #
-    # X_T = scaler.transform(X_T)
+    """--------------------------------- Train Of The Model ------------------------------------"""
 
 
     # making the instance
-    model = svm.LinearSVC()
+    # model = svm.SVC(kernel='linear', C=1000)
+    model = svm.SVC(kernel='linear', C=12)
     # learning
     model.fit(X_train, y_train)
+
+
+    """--------------------------------- Prediction And Evaluation On TrainData ------------------------------------"""
+
+
     # Prediction
     prediction = model.predict(X_test)
-    # evaluation(Accuracy)
-    print("Accuracy:", metrics.accuracy_score(prediction, y_test))
-    # evaluation(Confusion Metrix)
-    print("Confusion Metrix:\n", metrics.confusion_matrix(prediction, y_test))
+
+    # evaluation(Confusion Matrix)
+    print("Confusion Matrix Train Data :\n", metrics.confusion_matrix(y_test, prediction))
+    print("Classification Report Train Data :\n", classification_report(y_test, prediction))
+    print("Accuracy Train Data :", str(accuracy_score(y_test, prediction)))
+    print("\n**************************\n")
+
+
+    """--------------------------------- Prediction And Evaluation Of 2015/2016 ------------------------------------"""
+
     prediction_test = model.predict(X_T)
-    print("Accuracy 2015_2016:", metrics.accuracy_score(prediction_test, y_T))
 
-    # X_train_max, X_test_max,y_train_max, y_test_max = calcBestNumOfFolds(model, X, y, 35, X_T, y_T, trainData)
-
-
-
-    print(confusion_matrix(y_test, prediction))
-    print(classification_report(y_test, prediction))
+    print("Confusion Matrix 2015_2016 :\n", confusion_matrix(y_T, prediction_test))
+    print("Classification Report 2015_2016 :\n", classification_report(y_T, prediction_test))
+    print("Accuracy 2015_2016 :", str(accuracy_score(y_T, prediction_test)))
     print("\n**************************\n")
-    print("Training data accuracy is", str(accuracy_score(y_test, prediction)), "%")
-    print("\n**************************\n")
+
+
+    # print(classification_report(y_test, prediction))
+    # print("\n**************************\n")
+    # print("Training data accuracy is", str(accuracy_score(y_test, prediction)), "%")
+    # print("\n**************************\n")
 
     # # The SHAP values
     # svm_explainer = shap.KernelExplainer(model.predict, X_T)

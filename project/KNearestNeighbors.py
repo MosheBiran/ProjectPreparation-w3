@@ -48,14 +48,13 @@ def model_KNN(trainData, testData):
 
 
 
-    """--------------------------------- Prediction And Evaluation------------------------------------"""
+    """--------------------------------- Prediction And Evaluation On TrainData------------------------------------"""
 
     y_predict = classifier.predict(X_test)
 
-    print(confusion_matrix(y_test, y_predict))
-    print(classification_report(y_test, y_predict))
-    print("\n**************************\n")
-    print("Training data accuracy is", str(accuracy_score(y_test, y_predict)), "%")
+    print("Confusion Matrix Train Data :\n", confusion_matrix(y_test, y_predict))
+    print("Classification Report Train Data :\n", classification_report(y_test, y_predict))
+    print("Accuracy Training data :", str(accuracy_score(y_test, y_predict)), "%")
     print("\n**************************\n")
 
 
@@ -76,8 +75,9 @@ def model_KNN(trainData, testData):
 
     prediction_on_15_16 = classifier.predict(season_15_16_features)
 
-    print("\n**************************\n")
-    print("Seasons 2015/2016 data accuracy is", str(accuracy_score(season_15_16_Result, prediction_on_15_16)), "%")
+    print("Confusion Matrix 2015_2016 :\n", confusion_matrix(season_15_16_Result, prediction_on_15_16))
+    print("Classification Report 2015_2016 :\n", classification_report(season_15_16_Result, prediction_on_15_16))
+    print("Accuracy 2015_2016: ",  str(accuracy_score(season_15_16_Result, prediction_on_15_16)))
     print("\n**************************\n")
 
 
@@ -138,6 +138,7 @@ def trainWithGridSearchCV(trainData, testData):
               'n_jobs': [-1],
               'metric': meTri,
               'p': p}
+
     # Making models with hyper parameters sets
     model1 = GridSearchCV(model, param_grid=params, n_jobs=1)
     # Learning
