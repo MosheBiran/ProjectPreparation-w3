@@ -2,16 +2,13 @@ import sqlite3
 from aifc import Error
 import numpy as np
 import pandas as pd
-from matplotlib.pyplot import show
 from sklearn.preprocessing import MinMaxScaler
-
-
-
 from sklearn import preprocessing
 
-path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
 scaler = MinMaxScaler()
+
+path = "C:\\Users\\Daniel\\Downloads\\archive\\"
 
 
 
@@ -33,7 +30,6 @@ def init():
     match_Data_DF, team_Attr_Data_DF, teams_Data_DF, players_Data_Attr_DF, match_Players_Data_DF = sqlQuery(conn)
 
 
-    # # TODO : Check If We Need - Play With The backGames
     # match_Data_DF = addLastMatchesGoals(match_Data_DF)
 
 
@@ -53,7 +49,7 @@ def init():
     # Feature : Winning Percentage Past Games
     matchWithTeamAttributes_df = addWinPresentInLastGames(matchWithTeamAttributes_df, match_Data_DF_copy)
 
-    # Merging Data  # TODO : Check where Put This
+    # Merging Data
     matchWithTeamAttributes_df = pd.merge(matchWithTeamAttributes_df, Players_Attr_avg, how='inner', left_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'], right_on=['home_team_api_id', 'away_team_api_id', 'season', 'date'])
 
     # Feature : Mean Goals In The Last Season
@@ -156,7 +152,7 @@ def sqlQuery(conn):
 
 
 
-def dataframe_filter_players(data_match_players_df, player_attr_df):  # TODO : Change Name
+def dataframe_filter_players(data_match_players_df, player_attr_df):
     """
     :param data_match_players_df:Another frame containing player ID and that player attributes
     :param player_attr_df:data frame containing all  matches between 2 teams include  the season and date they play against each other
@@ -588,13 +584,13 @@ def calculateWinPresent(matches_sortedBy_HorA, inxOfWins):
     :return: The DataFrame With The Past Games Win Percentage
     """
     home_away = ''
-    # TODO : variables Shahar - Draw and Lose Percentage
+
     if 'home_team_api_id' in matches_sortedBy_HorA:
         home_away = 'Home'
     elif 'away_team_api_id' in matches_sortedBy_HorA:
         home_away = 'Away'
 
-    # TODO - If We Add Draw
+
     # matches_sortedBy_HorA.insert(len(matches_sortedBy_HorA.columns), 'percentDraws' + home_away, matches_sortedBy_HorA['result'].astype(float))
     # inxOfDraws = len(matches_sortedBy_HorA.columns) - 1
     # counterOfDraws = 0
@@ -668,7 +664,7 @@ def AddMeanGoalsLastSeason(data_df):
     data_home_df_other = data_df.groupby(['home_team_api_id', 'season'], as_index=False)['away_team_goal'].mean()
     data_away_df_other = data_df.groupby(['away_team_api_id', 'season'], as_index=False)['home_team_goal'].mean()
 
-    # TODO : Does is Helps?
+
     # data_home_df_other['away_team_goal'] = data_home_df_other['away_team_goal']*(-1)
     # data_away_df_other['home_team_goal'] = data_away_df_other['home_team_goal']*(-1)
 
@@ -755,10 +751,10 @@ def AddMeanGoalsLastSeason(data_df):
     choices = [1, -1]
     data_df["seasonGoals_Class"] = np.select(conditions_percent, choices, default=np.nan)
 
-    # TODO: Does We Need All This??
+
     # print(data_df["seasonGoals_Class"].value_counts())
 
-    # # TODO: Delete If Not Need
+
     # data_df['away_season_team_goal'] = data_df['away_season_team_goal']*(-1)
 
 
@@ -821,7 +817,7 @@ def addTeamAttribute_Ratio(data_df):
 
     data_df['overall_home_team_rating'] = data_df.loc[:, 'buildUpPlaySpeed_x':'defenceTeamWidth_x'].mean(axis=1) / data_df.loc[:, 'buildUpPlaySpeed_y':'defenceTeamWidth_y'].mean(axis=1)
 
-    # # TODO : If We Don't Do -1
+
     # data_df['overall_away_team_rating'] = data_df.loc[:, 'buildUpPlaySpeed_y':'defenceTeamWidth_y'].mean(axis=1)
     # data_df['overall_away_team_rating'] = data_df['overall_away_team_rating']*(-1)
 
@@ -982,7 +978,7 @@ def clearUnusedFeatures(dataToClean):
 
 
 """--------------------------------- Shahar Function ------------------------------------"""
-# TODO : What We This Function
+
 
 
 def get_last_matches(match, data_df):
@@ -1067,7 +1063,7 @@ def get_last_matches(match, data_df):
 
 
 """--------------------------------- Daniel Function ------------------------------------"""
-# TODO : What We This Function
+
 
 
 def addLastMatchesGoals(match_Data_DF):
@@ -1104,8 +1100,6 @@ def addLastMatchesGoals(match_Data_DF):
 
     awayAfterAdd = calculateHomeOrAwayGoals(match_sorted_by_away, inxOfCol, 'away_')
 
-    # # TODO: Delete if Don't Need (-1)
-    # awayAfterAdd['Away_LastMatchesGoals'] = awayAfterAdd['Away_LastMatchesGoals']*(-1)
 
 
     """--------------------------------- Merge To Main Data ------------------------------------"""
